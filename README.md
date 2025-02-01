@@ -1,7 +1,7 @@
 
 ## Brain Modeling Project 2024/2025
 
-# Comparison between Cerebellar SNN and Cerebellar Mean Field Models
+# Comparison of Cerebellar Spiking Neural Networks and Mean-Field Models
 This project explores the differences between a spiking neural network (SNN) and a mean-field model of the cerebellum. Using the NEST simulator, we construct a biologically inspired Leaky Integrate-and-Fire (LIF) network and compare its dynamics to a rate-based approximation.
 
 ## Objectives
