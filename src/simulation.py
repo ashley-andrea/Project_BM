@@ -4,37 +4,56 @@ from src import config, models
 
 def setup_network():
     """Set up the cerebellar network architecture."""
-    # Example: Create cell populations
-    granule_cells = models.create_granule_cells(1000)  # Adjust numbers as needed
-    purkinje_cells = models.create_purkinje_cells(100)
-    interneurons = models.create_interneurons(200)
-    mossy_fibers = models.create_mossy_fibers(300)
+    # Create cell populations using numbers from the config file
+    granule_cells = models.create_granule_cells(config.GRANULE_CELL_NUM)
+    purkinje_cells = models.create_purkinje_cells(config.PURKINJE_CELL_NUM)
+    interneurons   = models.create_interneurons(config.INTERNEURON_NUM)
+    golgi_cells    = models.create_golgi_cells(config.GOLGI_CELL_NUM)
+    dcn_cells      = models.create_deep_cerebellar_nuclei(config.DEEP_CEREBELLAR_NUCLEI_NUM)
+    mossy_fibers   = models.create_mossy_fibers(config.MOSSY_FIBER_NUM)
+    climbing_fibers = models.create_climbing_fibers(config.CLIMBING_FIBER_NUM)
     
     # Connect populations following cerebellar connectivity rules:
-    # Granule cells to Purkinje cells (via parallel fibers)
-    models.connect_cells(granule_cells, purkinje_cells, syn_spec=config.EXCITATORY_SYNAPSE)
     
-    # Inhibitory connections: interneurons to granule cells, for example.
-    models.connect_cells(interneurons, granule_cells, syn_spec=config.INHIBITORY_SYNAPSE)
-
-    # Mossy fibers to granule cells
-    models.connect_cells(mossy_fibers, granule_cells, syn_spec=config.MOSSY_FIBERS_SYNAPSE)
+    # 1. Connect mossy fibers to granule cells (excitatory)
+    models.connect_mossy_to_granule(mossy_fibers, granule_cells)
     
+    # 2. Connect mossy fibers to deep cerebellar nuclei (excitatory)
+    models.connect_mossy_to_dcn(mossy_fibers, dcn_cells)
+    
+    # 3. Connect granule cells (via parallel fibers) to Purkinje cells (excitatory)
+    models.connect_granule_to_purkinje(granule_cells, purkinje_cells)
+    
+    # 4. Connect climbing fibers to Purkinje cells (powerful excitatory input)
+    models.connect_climbing_to_purkinje(climbing_fibers, purkinje_cells)
+    
+    # 5. Connect Golgi cells to granule cells (inhibitory)
+    models.connect_golgi_to_granule(golgi_cells, granule_cells)
+    
+    # 6. Connect interneurons (basket/stellate cells) to Purkinje cells (inhibitory)
+    models.connect_interneuron_to_purkinje(interneurons, purkinje_cells)
+    
+    # 7. Connect Purkinje cells to deep cerebellar nuclei (inhibitory)
+    models.connect_purkinje_to_dcn(purkinje_cells, dcn_cells)
+    
+    # Return all populations in a dictionary for later use
     return {
         "granule": granule_cells,
         "purkinje": purkinje_cells,
         "interneurons": interneurons,
+        "golgi": golgi_cells,
+        "dcn": dcn_cells,
         "mossy_fibers": mossy_fibers,
+        "climbing_fibers": climbing_fibers,
     }
 
 def attach_recorders(cell_population, record_type="spikes"):
-    """Attach a spike detector (or multimeter for continuous variables) to a given cell population."""
+    """Attach a spike recorder or multimeter to a given cell population."""
     if record_type == "spikes":
-        spike_detector = nest.Create("spike_recorder")
-        nest.Connect(cell_population, spike_detector)
-        return spike_detector
+        spike_recorder = nest.Create("spike_recorder")
+        nest.Connect(cell_population, spike_recorder)
+        return spike_recorder
     elif record_type == "voltages":
-        # Example: Attach a multimeter to record membrane potentials
         multimeter = nest.Create("multimeter", params={"record_from": ["V_m"]})
         nest.Connect(multimeter, cell_population)
         return multimeter
@@ -46,7 +65,7 @@ def run_simulation():
     
     # Attach recorders to populations of interest
     sd_purkinje = attach_recorders(network["purkinje"], record_type="spikes")
-    vd_granule = attach_recorders(network["granule"], record_type="voltages")
+    vd_purkinje = attach_recorders(network["purkinje"], record_type="voltages")
     
     # Run simulation for the specified simulation time
     nest.Simulate(config.SIM_TIME)
@@ -54,5 +73,5 @@ def run_simulation():
     # Return recorded data
     return {
         "purkinje_spikes": nest.GetStatus(sd_purkinje, keys="events")[0],
-        "granule_voltages": nest.GetStatus(vd_granule, keys="events")[0],
+        "purkinje_voltages": nest.GetStatus(vd_purkinje, keys="events")[0],
     }
