@@ -1,109 +1,330 @@
-import nest
 import numpy as np
-from simulation import run_simulation
-from config import *
+from scipy.integrate import quad
+from scipy.special import erf
+from scipy.optimize import least_squares
+from src.config import *
 
-# Run the simulation
-network = run_simulation()
+# ======================
+# UTILITIES
+# ======================
 
-# Select the population of interest
-grc_pop = network["granule"]
-goc_pop = network["golgi"]
-pc_pop = network["purkinje"]
-mli_pop = network["interneurons"]
-mf_input = network["mossy_fibers"]
-cf_input = network["climbing_fibers"]
-dcn_output = network["dcn"]
+def validate_parameters():
+    """Check parameter biological plausibility"""
+    assert 0 < GRANULE_CELL_PARAMS["tau_m"] < 50, "Granule cell tau_m out of range"
+    assert -80 < GRANULE_CELL_PARAMS["V_th"] < -40, "Granule threshold unrealistic"
+    assert abs(SYN_MF_TO_GRANULE["weight"]) < 10, "MF-GrC weight too large"
+    # Add similar checks for other parameters
 
-# Define Siegert function
-def siegert(mean, sigma, tau_m, V_th, V_reset, tau_ref):
-    def integrand(x):
-        return np.exp(x**2) * (1 + np.erf(x))
-    lower = (V_reset - mean) / sigma
-    upper = (V_th - mean) / sigma
-    integral, _ = np.quad(integrand, lower, upper)
-    return 1.0 / (tau_ref + tau_m * np.sqrt(np.pi) * integral)
+def find_steady_state(mf_rate, cf_rate):
+    """Robust steady-state solver"""
+    # Initial guess based on biological expectations
+    initial_guess = np.array([
+        max(1, 0.1 * mf_rate),  # GrC ~10% of MF input
+        max(1, 0.2 * mf_rate),  # GoC 
+        50.0,  # PC base rate
+        20.0   # MLI
+    ])
+    
+    # Bounds to prevent negative rates
+    bounds = ([1e-3, 1e-3, 1e-3, 1e-3], [1e4, 1e4, 1e3, 1e3])
+    
+    # Use trust-region reflective method
+    result = least_squares(
+        lambda x: cerebellar_mean_field(x, mf_rate, cf_rate),
+        initial_guess,
+        bounds=bounds,
+        ftol=1e-6,
+        xtol=1e-6,
+        max_nfev=1000
+    )
+    return result.x
 
-# Population-specific parameters
-grc_pam = GRANULE_CELL_PARAMS
-goc_pam = GOLGI_CELL_PARAMS
-pc_pam = PURKINJE_CELL_PARAMS
-mli_pam = INTERNEURON_PARAMS
 
-# Connection weights and in-degrees
-conn_ext_grc = nest.GetConnections(mf_input, grc_pop)
-J_ext_grc = np.mean(nest.GetStatus(conn_ext_grc, 'weight'))
-N_ext_grc = len(conn_ext_grc) // len(grc_pop)
+# ======================
+# NETWORK ARCHITECTURE
+# ======================
 
-conn_ext_go = nest.GetConnections(mf_input, goc_pop)
-J_ext_go = np.mean(nest.GetStatus(conn_ext_go, 'weight'))
-N_ext_go = len(conn_ext_go) // len(goc_pop)
+NEURON_POPULATIONS = [
+    "granule", "golgi", "purkinje", 
+    "interneurons", "mossy_fibers", 
+    "climbing_fibers", "dcn"
+]
 
-conn_ext_pc = nest.GetConnections(cf_input, pc_pop)
-J_ext_pc = np.mean(nest.GetStatus(conn_ext_pc, 'weight'))
-N_ext_pc = len(conn_ext_pc) // len(pc_pop)
+SYNAPTIC_CONNECTIONS = {
+    # Mossy fiber projections
+    ('mossy_fibers', 'granule'): (
+        abs(SYN_MF_TO_GRANULE['weight']), 
+        4   # int(MOSSY_FIBER_NUM * CONN_MF_TO_GRANULE['p'])
+    ),
+    ('mossy_fibers', 'golgi'): (
+        SYN_MF_TO_GOLGI['weight'], 
+        int(MOSSY_FIBER_NUM * CONN_MF_TO_GOLGI['p'])
+    ),
+    ('mossy_fibers', 'dcn'): (
+        SYN_MF_TO_DCN['weight'],
+        int(MOSSY_FIBER_NUM * DEEP_CEREBELLAR_NUCLEI_NUM * 0.01)
+    ),
+    
+    # Granule cell projections
+    ('granule', 'golgi'): (
+        SYN_GRANULE_TO_GOLGI['weight'], 
+        int(GRANULE_CELL_NUM * CONN_GRANULE_TO_GOLGI['p'])
+    ),
+    ('granule', 'purkinje'): (
+        SYN_PARALLEL['weight'], 
+        int(GRANULE_CELL_NUM * CONN_GRANULE_TO_PURKINJE['p'])
+    ),
+    ('granule', 'interneurons'): (
+        SYN_GRANULE_TO_INTERNEURON['weight'], 
+        int(GRANULE_CELL_NUM * CONN_GRANULE_TO_INTERNEURON['p'])
+    ),
+    
+    # Golgi cell projections
+    ('golgi', 'granule'): (
+        abs(SYN_GOLGI_TO_GRANULE['weight']), 
+        int(GOLGI_CELL_NUM * CONN_GOLGI_TO_GRANULE['p'])
+    ),
+    ('golgi', 'golgi'): (
+        abs(SYN_GOLGI_TO_GOLGI['weight']), 
+        int(GOLGI_CELL_NUM * CONN_GOLGI_TO_GOLGI['p'])
+    ),
+    
+    # Interneuron projections
+    ('interneurons', 'purkinje'): (
+        abs(SYN_INTERNEURON_TO_PURKINJE['weight']), 
+        int(INTERNEURON_NUM * CONN_INTERNEURON_TO_PURKINJE['p'])
+    ),
+    ('interneurons', 'interneurons'): (
+        abs(SYN_INTERNEURON_TO_INTERNEURON['weight']), 
+        int(INTERNEURON_NUM * CONN_INTERNEURON_TO_INTERNEURON['p'])
+    ),
+    
+    # Climbing fiber projections
+    ('climbing_fibers', 'purkinje'): (
+        SYN_CLIMBING['weight'], 
+        int(CLIMBING_FIBER_NUM * CONN_CLIMBING_TO_PURKINJE['p'])
+    ),
+    
+    # Purkinje cell projections
+    ('purkinje', 'dcn'): (
+        abs(SYN_PURKINJE_TO_DCN['weight']), 
+        PURKINJE_CELL_NUM
+    )
+}
 
-conn_grc_goc = nest.GetConnections(grc_pop, goc_pop)
-J_grc_goc = np.mean(nest.GetStatus(conn_grc_goc, 'weight'))
-N_grc_goc = len(conn_grc_goc) // len(goc_pop)  
+# ======================
+# CORE FUNCTIONS
+# ======================
 
-conn_goc_grc = nest.GetConnections(goc_pop, grc_pop)
-J_goc_grc = -np.abs(np.mean(nest.GetStatus(conn_goc_grc, 'weight')))
-N_goc_grc = len(conn_goc_grc) // len(grc_pop)
+def get_synaptic_parameters(source_population, target_population, sign=1.0):
+    """
+    Retrieve synaptic parameters from configuration
+    
+    Args:
+        source_population (str): Presynaptic population name
+        target_population (str): Postsynaptic population name
+        sign (float): Sign multiplier for inhibitory connections
+    
+    Returns:
+        tuple: (synaptic_weight, connection_count)
+    """
+    connection_key = (source_population, target_population)
+    
+    if connection_key not in SYNAPTIC_CONNECTIONS:
+        raise ValueError(f"Undefined connection: {connection_key}")
+    
+    base_weight, connection_count = SYNAPTIC_CONNECTIONS[connection_key]
+    return sign * base_weight, connection_count
 
-conn_goc_goc = nest.GetConnections(goc_pop, goc_pop)
-J_goc_goc = -np.abs(np.mean(nest.GetStatus(conn_goc_goc, 'weight')))
-N_goc_goc = len(conn_goc_goc) // len(goc_pop) 
+def improved_integrand(x):
+    # Use asymptotic approximation for very negative x
+    if x < -5:
+        # Instead of computing exp(x**2) and exp(-x**2) separately,
+        # simplify to the equivalent expression.
+        return 1.0 / (np.sqrt(np.pi) * np.abs(x))
+    # For moderate values, use the full expression
+    try:
+        return np.exp(x**2) * (1 + erf(x))
+    except OverflowError:
+        # Fallback for unexpected overflow: use an asymptotic approximation
+        if x > 0:
+            # For large positive x, use a similar trick
+            return np.exp(x**2) * (2 - np.exp(-x**2) / (np.sqrt(np.pi) * x))
+        else:
+            return 0.0
 
-conn_grc_mli = nest.GetConnections(grc_pop, mli_pop)
-J_grc_mli = np.mean(nest.GetStatus(conn_grc_mli, 'weight'))
-N_grc_mli = len(conn_grc_mli) // len(mli_pop)
+def siegert_integral(mean_potential, potential_std, membrane_time_constant, 
+                     threshold_potential, reset_potential, refractory_period):
+    # Define integration limits in dimensionless form
+    lower_bound = (reset_potential - mean_potential) / potential_std
+    upper_bound = (threshold_potential - mean_potential) / potential_std
+    
+    if np.abs(upper_bound - lower_bound) < 1e-6:
+        return 0.0
+    
+    # Optionally, split integration if the range spans a problematic region
+    if lower_bound < 0 and upper_bound > 0:
+        int1, _ = quad(improved_integrand, lower_bound, 0, limit=200, epsabs=1e-3, epsrel=1e-3)
+        int2, _ = quad(improved_integrand, 0, upper_bound, limit=200, epsabs=1e-3, epsrel=1e-3)
+        integral_value = int1 + int2
+    else:
+        integral_value, _ = quad(improved_integrand, lower_bound, upper_bound, 
+                                 limit=200, epsabs=1e-3, epsrel=1e-3)
+    
+    denominator = refractory_period + membrane_time_constant * np.sqrt(np.pi) * integral_value
+    return 1.0 / denominator if denominator != 0 else 0.0
 
-conn_grc_pc = nest.GetConnections(grc_pop, pc_pop)
-J_grc_pc = np.mean(nest.GetStatus(conn_grc_pc, 'weight'))
-N_grc_pc = len(conn_grc_pc) // len(pc_pop)
+def create_transfer_function(cell_parameters):
+    """
+    Generate population-specific rate transfer function
+    
+    Args:
+        cell_parameters (dict): Physiological parameters for cell type
+    
+    Returns:
+        function: Rate calculation function (mu, sigma) -> rate
+    """
+    def transfer_function(mean_input, std_input):
+        return siegert_integral(
+            mean_input, std_input,
+            cell_parameters["tau_m"],
+            cell_parameters["V_th"],
+            cell_parameters["V_reset"],
+            cell_parameters["t_ref"]
+        )
+    return transfer_function
 
-conn_mli_mli = nest.GetConnections(mli_pop, mli_pop)
-J_mli_mli = -np.abs(np.mean(nest.GetStatus(conn_mli_mli, 'weight')))
-N_mli_mli = len(conn_mli_mli) // len(mli_pop)
+# ======================
+# POPULATION INTERACTIONS
+# ======================
 
-conn_mli_pc = nest.GetConnections(mli_pop, pc_pop)
-J_mli_pc = -np.abs(np.mean(nest.GetStatus(conn_mli_pc, 'weight')))
-N_mli_pc = len(conn_mli_pc) // len(pc_pop)
+# Initialize transfer functions
+granule_rate = create_transfer_function(GRANULE_CELL_PARAMS)
+golgi_rate = create_transfer_function(GOLGI_CELL_PARAMS)
+purkinje_rate = create_transfer_function(PURKINJE_CELL_PARAMS)
+interneuron_rate = create_transfer_function(INTERNEURON_PARAMS)
 
-conn_pc_ext = nest.GetConnections(pc_pop, dcn_output)
-J_pc_ext = -np.abs(np.mean(nest.GetStatus(conn_pc_ext, 'weight')))
-N_pc_ext = len(conn_pc_ext) // len(dcn_output)
+# Retrieve synaptic parameters
+mf_to_granule_weight, mf_to_granule_count = get_synaptic_parameters('mossy_fibers', 'granule')
+mf_to_golgi_weight, mf_to_golgi_count = get_synaptic_parameters('mossy_fibers', 'golgi')
+cf_to_purkinje_weight, cf_to_purkinje_count = get_synaptic_parameters('climbing_fibers', 'purkinje')
+granule_to_golgi_weight, granule_to_golgi_count = get_synaptic_parameters('granule', 'golgi')
+golgi_to_granule_weight, golgi_to_granule_count = get_synaptic_parameters('golgi', 'granule', -1)
+golgi_to_golgi_weight, golgi_to_golgi_count = get_synaptic_parameters('golgi', 'golgi', -1)
+granule_to_interneuron_weight, granule_to_interneuron_count = get_synaptic_parameters('granule', 'interneurons')
+granule_to_purkinje_weight, granule_to_purkinje_count = get_synaptic_parameters('granule', 'purkinje')
+interneuron_to_interneuron_weight, interneuron_to_interneuron_count = get_synaptic_parameters('interneurons', 'interneurons', -1)
+interneuron_to_purkinje_weight, interneuron_to_purkinje_count = get_synaptic_parameters('interneurons', 'purkinje', -1)
+purkinje_to_dcn_weight, purkinje_to_dcn_count = get_synaptic_parameters('purkinje', 'dcn', -1)
+mf_to_dcn_weight, mf_to_dcn_count = get_synaptic_parameters('mossy_fibers', 'dcn')
 
-# Population-specific transfer functions
-def nu_grc(mu, sigma):
-    return siegert(mu, sigma, grc_pam["tau_m"], grc_pam["V_th"], grc_pam["V_reset"], grc_pam["t_ref"])
+# ======================
+# INPUT CALCULATIONS
+# ======================
 
-def nu_goc(mu, sigma):
-    return siegert(mu, sigma, goc_pam["tau_m"], goc_pam["V_th"], goc_pam["V_reset"], goc_pam["t_ref"])
+def calculate_synaptic_input(weight_count_pairs):
+    """Sum weighted synaptic inputs"""
+    return sum(weight * count * rate for weight, count, rate in weight_count_pairs)
 
-def nu_pc(mu, sigma):
-    return siegert(mu, sigma, pc_pam["tau_m"], pc_pam["V_th"], pc_pam["V_reset"], pc_pam["t_ref"])
+def calculate_synaptic_variance(weight_count_pairs):
+    """Sum squared synaptic variances"""
+    return sum((weight**2) * count * rate for weight, count, rate in weight_count_pairs)
 
-def nu_mli(mu, sigma):
-    return siegert(mu, sigma, mli_pam["tau_m"], mli_pam["V_th"], mli_pam["V_reset"], mli_pam["t_ref"])
+def granule_inputs(golgi_rate, mossy_fiber_rate):
+    """Calculate granule cell input statistics"""
+    mean = calculate_synaptic_input([
+        (mf_to_granule_weight, mf_to_granule_count, mossy_fiber_rate),
+        (golgi_to_granule_weight, golgi_to_granule_count, golgi_rate)
+    ])
+    variance = calculate_synaptic_variance([
+        (mf_to_granule_weight, mf_to_granule_count, mossy_fiber_rate),
+        (golgi_to_granule_weight, golgi_to_granule_count, golgi_rate)
+    ])
+    return mean, np.sqrt(variance)
 
-# Population-specific mean and variance of inputs
+def golgi_inputs(granule_rate, mossy_fiber_rate, current_golgi_rate):
+    """Calculate golgi cell input statistics"""
+    mean = calculate_synaptic_input([
+        (mf_to_golgi_weight, mf_to_golgi_count, mossy_fiber_rate),
+        (granule_to_golgi_weight, granule_to_golgi_count, granule_rate),
+        (golgi_to_golgi_weight, golgi_to_golgi_count, current_golgi_rate)
+    ])
+    variance = calculate_synaptic_variance([
+        (mf_to_golgi_weight, mf_to_golgi_count, mossy_fiber_rate),
+        (granule_to_golgi_weight, granule_to_golgi_count, granule_rate),
+        (golgi_to_golgi_weight, golgi_to_golgi_count, current_golgi_rate)
+    ])
+    return mean, np.sqrt(variance)
 
-# Input to grc: external (mossy fibers) - inhibition from goc
-def mu_grc(nu_goc, nu_ext):
-    return J_ext_grc * N_ext_grc * nu_ext + J_goc_grc * N_goc_grc * nu_goc
+def purkinje_inputs(interneuron_rate, granule_rate, climbing_fiber_rate):
+    """Calculate purkinje cell input statistics"""
+    mean = calculate_synaptic_input([
+        (granule_to_purkinje_weight, granule_to_purkinje_count, granule_rate),
+        (interneuron_to_purkinje_weight, interneuron_to_purkinje_count, interneuron_rate),
+        (cf_to_purkinje_weight, cf_to_purkinje_count, climbing_fiber_rate)
+    ])
+    variance = calculate_synaptic_variance([
+        (granule_to_purkinje_weight, granule_to_purkinje_count, granule_rate),
+        (interneuron_to_purkinje_weight, interneuron_to_purkinje_count, interneuron_rate),
+        (cf_to_purkinje_weight, cf_to_purkinje_count, climbing_fiber_rate)
+    ])
+    return mean, np.sqrt(variance)
 
-def sigma2_grc(nu_goc, nu_ext):
-    return (J_ext_grc**2 * N_ext_grc * nu_ext) + (J_goc_grc**2 * N_goc_grc * nu_goc)
+def interneuron_inputs(granule_rate, current_interneuron_rate):
+    """Calculate interneuron input statistics"""
+    mean = calculate_synaptic_input([
+        (granule_to_interneuron_weight, granule_to_interneuron_count, granule_rate),
+        (interneuron_to_interneuron_weight, interneuron_to_interneuron_count, current_interneuron_rate)
+    ])
+    variance = calculate_synaptic_variance([
+        (granule_to_interneuron_weight, granule_to_interneuron_count, granule_rate),
+        (interneuron_to_interneuron_weight, interneuron_to_interneuron_count, current_interneuron_rate)
+    ])
+    return mean, np.sqrt(variance)
 
-# Input to goc: external (mossy fibers) - excitation from grc
-def mu_goc(nu_gr, nu_ext, nu_goc):
-    return J_ext_go * N_ext_go * nu_ext + J_grc_goc * N_grc_goc * nu_gr + J_goc_goc * N_goc_goc * nu_goc
+# ======================
+# MEAN-FIELD MODEL
+# ======================
 
-def sigma2_goc(nu_gr, nu_ext, nu_goc):
-    return (J_ext_go**2 * N_ext_go * nu_ext) + (J_grc_goc**2 * N_grc_goc * nu_gr) + (J_goc_goc**2 * N_goc_goc * nu_goc)
-
-### CONTINUE HERE ###
-
-# Input to pc: excitation from cf - inhibition from mli
+def cerebellar_mean_field(current_rates, mossy_fiber_rate, climbing_fiber_rate):
+    """
+    Calculate residuals between current rates and mean-field predictions
+    
+    Args:
+        current_rates (list): Current population rates [granule, golgi, purkinje, interneuron]
+        mossy_fiber_rate (float): Mossy fiber input rate (Hz)
+        climbing_fiber_rate (float): Climbing fiber input rate (Hz)
+    
+    Returns:
+        list: Residuals for each population [granule_res, golgi_res, purkinje_res, interneuron_res]
+    """
+    current_granule, current_golgi, current_purkinje, current_interneuron = current_rates
+    
+    # Granule cell calculations
+    granule_mean, granule_std = granule_inputs(current_golgi, mossy_fiber_rate)
+    print("Granule mean input:", granule_mean)
+    print("Granule std input:", granule_std)
+    granule_residual = current_granule - granule_rate(granule_mean, granule_std)
+    
+    # Golgi cell calculations
+    golgi_mean, golgi_std = golgi_inputs(current_granule, mossy_fiber_rate, current_golgi)
+    print("Golgi mean input:", golgi_mean)
+    print("Golgi std input:", golgi_std)
+    golgi_residual = current_golgi - golgi_rate(golgi_mean, golgi_std)
+    
+    # Purkinje cell calculations
+    purkinje_mean, purkinje_std = purkinje_inputs(current_interneuron, current_granule, climbing_fiber_rate)
+    print("Purkinje mean input:", purkinje_mean)
+    print("Purkinje std input:", purkinje_std)
+    purkinje_residual = current_purkinje - purkinje_rate(purkinje_mean, purkinje_std)
+    
+    # Interneuron calculations
+    interneuron_mean, interneuron_std = interneuron_inputs(current_granule, current_interneuron)
+    print("Interneuron mean input:", interneuron_mean)
+    print("Interneuron std input:", interneuron_std)
+    interneuron_residual = current_interneuron - interneuron_rate(interneuron_mean, interneuron_std)
+    
+    return [granule_residual, golgi_residual, purkinje_residual, interneuron_residual]
+# Dynamics placeholder (to be implemented)
+def cerebellar_dynamics(t, nu, nu_ext):
+    pass

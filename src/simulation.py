@@ -1,6 +1,8 @@
 # src/simulation.py
 import nest
-import config, models
+import src.config as config 
+import src.models as models
+import os
 
 def setup_network():
     """Set up the cerebellar network architecture."""

@@ -1,5 +1,4 @@
 # src/config.py
-import nest
 
 # Simulation parameters
 SIM_TIME = 1000.0  # Total simulation time in ms
@@ -33,25 +32,25 @@ GRANULE_CELL_PARAMS = {
 GRANULE_CELL_NUM = 500
 
 GOLGI_CELL_PARAMS = {
-    "tau_m": 25.0,      # Slightly slower dynamics
+    "tau_m": 25.0,      
     "E_L": -70.0,
-    "V_th": -50.0,      # A lower threshold might be appropriate for more responsive inhibition
+    "V_th": -50.0,      
     "V_reset": -70.0,
     "t_ref": 2.0
 }
 GOLGI_CELL_NUM = 50
 
 PURKINJE_CELL_PARAMS = {
-    "tau_m": 30.0,      # Longer integration time
+    "tau_m": 30.0,      
     "E_L": -70.0,
-    "V_th": -50.0,      # Lower threshold to reflect the high sensitivity to input
-    "V_reset": -65.0,   # A higher reset potential may allow for high-frequency firing under strong drive
-    "t_ref": 5.0        # A longer refractory period can help mimic their slower spontaneous firing rates
+    "V_th": -50.0,      
+    "V_reset": -65.0,  
+    "t_ref": 5.0       
 }
 PURKINJE_CELL_NUM = 50
 
 INTERNEURON_PARAMS = {
-    "tau_m": 10.0,      # Faster membrane dynamics for rapid inhibition
+    "tau_m": 10.0,      
     "E_L": -70.0,
     "V_th": -55.0,
     "V_reset": -70.0,
@@ -68,75 +67,127 @@ DEEP_CEREBELLAR_NUCLEI_PARAMS = {
 }
 DEEP_CEREBELLAR_NUCLEI_NUM = 50
 
-
 # -----------------------------------------------------------
-# Synaptic parameters and connection specifications
+# Synaptic parameters and connection specifications (expanded)
 # -----------------------------------------------------------
 
-# 1. Mossy Fiber to Granule Cell (excitatory)
+# 1. Mossy Fiber connections
 SYN_MF_TO_GRANULE = {
-    "weight": 3.0,     # Strength of excitatory connection
-    "delay": 1.0       # Synaptic delay in ms
+    "weight": 1.0, 
+    "delay": 1.0
 }
-
-# 2. Mossy Fiber to Deep Cerebellar Nuclei (excitatory)
+SYN_MF_TO_GOLGI = {
+    "weight": 1.0,
+    "delay": 1.0
+}
 SYN_MF_TO_DCN = {
     "weight": 1.5,
     "delay": 1.0
 }
 
-# 3. Granule Cell to Purkinje Cell (via parallel fibers, excitatory)
+# 2. Granule Cell connections
+SYN_GRANULE_TO_GOLGI = {
+    "weight": 1.2,  
+    "delay": 1.5
+}
 SYN_PARALLEL = {
     "weight": 1.0,
     "delay": 1.5
 }
-CONN_GRANULE_TO_PURKINJE = {
-    "rule": "pairwise_bernoulli",
-    "p": 0.6     # 10% probability for connection
+SYN_GRANULE_TO_INTERNEURON = {
+    "weight": 0.8,
+    "delay": 1.5
 }
 
-# 4. Climbing Fiber to Purkinje Cell (powerful excitatory input)
-SYN_CLIMBING = {
-    "weight": 5.0,
-    "delay": 1.0
-}
-CONN_CLIMBING_TO_PURKINJE = {
-    "rule": "pairwise_bernoulli",  # Assumes one climbing fiber per Purkinje cell
-    "p": 0.2,     # 20% probability for connection
-}
-
-# 5. Golgi Cell to Granule Cell (inhibitory)
+# 3. Golgi Cell connections 
 SYN_GOLGI_TO_GRANULE = {
-    "weight": -1.0,   # Negative weight for inhibition
+    "weight": -4,  
     "delay": 1.0
 }
-CONN_GOLGI_TO_GRANULE = {
-    "rule": "pairwise_bernoulli",
-    "p": 0.2     # 20% probability for connection
+SYN_GOLGI_TO_GOLGI = {
+    "weight": -0.5,   # Recurrent inhibition
+    "delay": 1.0
 }
 
-# 6. Interneuron (Basket/Stellate) to Purkinje Cell (inhibitory)
+# 4. Interneuron connections
 SYN_INTERNEURON_TO_PURKINJE = {
     "weight": -1.5,
     "delay": 1.0
 }
-CONN_INTERNEURON_TO_PURKINJE = {
-    "rule": "pairwise_bernoulli",
-    "p": 0.3     # 50% probability for connection
+SYN_INTERNEURON_TO_INTERNEURON = {
+    "weight": -0.8,   # Recurrent inhibition
+    "delay": 1.0
 }
 
-# 7. Purkinje Cell to Deep Cerebellar Nuclei (inhibitory)
+# 5. Purkinje Cell connections
 SYN_PURKINJE_TO_DCN = {
     "weight": -2.0,
     "delay": 1.0
 }
+
+# 6. Climbing Fiber connections
+SYN_CLIMBING = {
+    "weight": 15.0, 
+    "delay": 1.0
+}
+
+# -----------------------------------------------------------
+# Connection rules (expanded)
+# -----------------------------------------------------------
+
+CONN_MF_TO_GRANULE = {
+    "rule": "fixed_total_number",
+    "N": MOSSY_FIBER_NUM * GRANULE_CELL_NUM // 5000
+}
+
+CONN_MF_TO_GOLGI = {
+    "rule": "pairwise_bernoulli",
+    "p": 0.5
+}
+
+CONN_GRANULE_TO_GOLGI = {
+    "rule": "pairwise_bernoulli",
+    "p": 0.1
+}
+
+CONN_GOLGI_TO_GRANULE = {
+    "rule": "pairwise_bernoulli",
+    "p": 0.3
+}
+
+CONN_GOLGI_TO_GOLGI = {
+    "rule": "pairwise_bernoulli",
+    "p": 0.15
+}
+
+CONN_GRANULE_TO_INTERNEURON = {
+    "rule": "pairwise_bernoulli",
+    "p": 0.25
+}
+
+CONN_INTERNEURON_TO_INTERNEURON = {
+    "rule": "pairwise_bernoulli",
+    "p": 0.3
+}
+
+CONN_GRANULE_TO_PURKINJE = {
+    "rule": "pairwise_bernoulli",
+    "p": 0.5  
+}
+
+CONN_CLIMBING_TO_PURKINJE = {
+    "rule": "pairwise_bernoulli",
+    "p": 0.2
+}
+
+CONN_INTERNEURON_TO_PURKINJE = {
+    "rule": "pairwise_bernoulli",
+    "p": 0.3
+}
+
 CONN_PURKINJE_TO_DCN = {
     "rule": "all_to_all"
 }
 
 # Random seed for reproducibility
 SEED = 42
-
-# Apply the simulation settings to NEST
-nest.ResetKernel()
-nest.SetKernelStatus({"resolution": DT, "print_time": True, "rng_seed": SEED})
