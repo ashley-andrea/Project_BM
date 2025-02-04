@@ -1,6 +1,6 @@
 # src/models.py
 import nest
-from src import config
+import config
 
 # -----------------------------------------------------------
 # Population creation functions

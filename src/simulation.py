@@ -1,6 +1,6 @@
 # src/simulation.py
 import nest
-from src import config, models
+import config, models
 
 def setup_network():
     """Set up the cerebellar network architecture."""
@@ -59,7 +59,7 @@ def attach_recorders(cell_population, record_type="spikes"):
         return multimeter
     return None
 
-def run_simulation():
+def example_simulation():
     """Set up and run the network simulation."""
     network = setup_network()
     
@@ -75,3 +75,9 @@ def run_simulation():
         "purkinje_spikes": nest.GetStatus(sd_purkinje, keys="events")[0],
         "purkinje_voltages": nest.GetStatus(vd_purkinje, keys="events")[0],
     }
+
+def run_simulation():
+    nest.ResetKernel()
+    network = setup_network()
+    nest.Simulate(config.SIM_TIME)
+    return network

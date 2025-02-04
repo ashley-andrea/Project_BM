@@ -5,8 +5,7 @@ import nest
 SIM_TIME = 1000.0  # Total simulation time in ms
 DT = 0.1           # Integration time step in ms
 
-
-
+# -----------------------------------------------------------
 # We consider Mossy and Climbing fibers as Poisson generators, so we only define their firing rates
 
 MOSSY_FIBER_PARAMS = {
