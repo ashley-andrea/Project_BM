@@ -1,0 +1,11 @@
+TODO LIST
+
+- [ ] Balance the models with reasonable data (tweak data in config.py until good behaviour)
+- [ ] !!! Once data in config.py have been fixed, do the following !!!
+- [ ] Analyze the behaviour of SNN in NEST
+- [ ] Analyze the behavioyr of Mean Field model
+- [ ] Observations of Temporal patterns in both
+- [ ] Comparison between the two models
+- [ ] Results
+- [ ] Many many graphs
+- [ ] Report
