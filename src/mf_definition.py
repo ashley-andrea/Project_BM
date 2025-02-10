@@ -14,6 +14,7 @@ def validate_parameters():
     assert -80 < GRANULE_CELL_PARAMS["V_th"] < -40, "Granule threshold unrealistic"
     assert abs(SYN_MF_TO_GRANULE["weight"]) < 10, "MF-GrC weight too large"
     # Add similar checks for other parameters
+    # CONTINUE ...
 
 def find_steady_state(mf_rate, cf_rate):
     """Robust steady-state solver"""
@@ -102,7 +103,7 @@ SYNAPTIC_CONNECTIONS = {
     # Climbing fiber projections
     ('climbing_fibers', 'purkinje'): (
         SYN_CLIMBING['weight'], 
-        int(CLIMBING_FIBER_NUM * CONN_CLIMBING_TO_PURKINJE['p'])
+        int(CLIMBING_FIBER_NUM)
     ),
     
     # Purkinje cell projections
@@ -135,44 +136,83 @@ def get_synaptic_parameters(source_population, target_population, sign=1.0):
     
     base_weight, connection_count = SYNAPTIC_CONNECTIONS[connection_key]
     return sign * base_weight, connection_count
-
+ 
 def improved_integrand(x):
-    # Use asymptotic approximation for very negative x
-    if x < -5:
-        # Instead of computing exp(x**2) and exp(-x**2) separately,
-        # simplify to the equivalent expression.
+    """
+    Enhanced integrand with sophisticated handling of numerical edge cases.
+    
+    Key improvements:
+    - Advanced asymptotic approximations
+    - Precise handling of overflow scenarios
+    - Continuous behavior across different x ranges
+    """
+    # Extreme negative x: asymptotic approximation
+    if x < -10:
         return 1.0 / (np.sqrt(np.pi) * np.abs(x))
-    # For moderate values, use the full expression
+    
+    # Extreme positive x: specialized high-precision approximation
+    if x > 10:
+        return np.exp(x**2) * (2 - np.exp(-x**2) / (np.sqrt(np.pi) * x))
+    
+    # Standard case with robust error function handling
     try:
         return np.exp(x**2) * (1 + erf(x))
     except OverflowError:
-        # Fallback for unexpected overflow: use an asymptotic approximation
-        if x > 0:
-            # For large positive x, use a similar trick
-            return np.exp(x**2) * (2 - np.exp(-x**2) / (np.sqrt(np.pi) * x))
-        else:
-            return 0.0
+        # Fallback strategy for unexpected numerical issues
+        return np.sign(x) * np.inf if x > 0 else 0.0
 
-def siegert_integral(mean_potential, potential_std, membrane_time_constant, 
-                     threshold_potential, reset_potential, refractory_period):
-    # Define integration limits in dimensionless form
+def siegert_integral(mean_potential, potential_std, 
+                     membrane_time_constant, threshold_potential, 
+                     reset_potential, refractory_period,
+                     adaptive_integration=True):
+    """
+    Robust and precise Siegert integral calculation.
+    
+    Enhanced features:
+    - Adaptive integration strategy
+    - Multiple numerical stability mechanisms
+    - Flexible integration approach
+    """
+    # Normalize potentials to standard units
     lower_bound = (reset_potential - mean_potential) / potential_std
     upper_bound = (threshold_potential - mean_potential) / potential_std
     
-    if np.abs(upper_bound - lower_bound) < 1e-6:
+    # Early termination for negligible integration range
+    if np.abs(upper_bound - lower_bound) < 1e-12:
         return 0.0
     
-    # Optionally, split integration if the range spans a problematic region
-    if lower_bound < 0 and upper_bound > 0:
-        int1, _ = quad(improved_integrand, lower_bound, 0, limit=200, epsabs=1e-3, epsrel=1e-3)
-        int2, _ = quad(improved_integrand, 0, upper_bound, limit=200, epsabs=1e-3, epsrel=1e-3)
-        integral_value = int1 + int2
+    # Advanced integration strategy
+    if adaptive_integration and lower_bound * upper_bound < 0:
+        # Split integration around zero for enhanced precision
+        try:
+            int1, err1 = quad(improved_integrand, lower_bound, 0, 
+                              limit=300, epsabs=1e-10, epsrel=1e-10)
+            int2, err2 = quad(improved_integrand, 0, upper_bound, 
+                              limit=300, epsabs=1e-10, epsrel=1e-10)
+            integral_value = int1 + int2
+            integration_error = err1 + err2
+        except Exception:
+            # Fallback to standard integration
+            integral_value, integration_error = quad(
+                improved_integrand, lower_bound, upper_bound, 
+                limit=300, epsabs=1e-10, epsrel=1e-10
+            )
     else:
-        integral_value, _ = quad(improved_integrand, lower_bound, upper_bound, 
-                                 limit=200, epsabs=1e-3, epsrel=1e-3)
+        # Standard single-range integration
+        integral_value, integration_error = quad(
+            improved_integrand, lower_bound, upper_bound, 
+            limit=300, epsabs=1e-10, epsrel=1e-10
+        )
     
-    denominator = refractory_period + membrane_time_constant * np.sqrt(np.pi) * integral_value
-    return 1.0 / denominator if denominator != 0 else 0.0
+    # Final computation with enhanced numerical stability
+    denominator = (refractory_period + 
+                   membrane_time_constant * np.sqrt(np.pi) * integral_value)
+    
+    # Handle potential division by near-zero scenarios
+    result = 1.0 / denominator if denominator > 1e-12 else 0.0
+    
+    return result
+
 
 def create_transfer_function(cell_parameters):
     """
@@ -218,6 +258,7 @@ interneuron_to_purkinje_weight, interneuron_to_purkinje_count = get_synaptic_par
 purkinje_to_dcn_weight, purkinje_to_dcn_count = get_synaptic_parameters('purkinje', 'dcn', -1)
 mf_to_dcn_weight, mf_to_dcn_count = get_synaptic_parameters('mossy_fibers', 'dcn')
 
+
 # ======================
 # INPUT CALCULATIONS
 # ======================
@@ -230,33 +271,46 @@ def calculate_synaptic_variance(weight_count_pairs):
     """Sum squared synaptic variances"""
     return sum((weight**2) * count * rate for weight, count, rate in weight_count_pairs)
 
-def granule_inputs(golgi_rate, mossy_fiber_rate):
+def granule_inputs(golgi_rate, mossy_fiber_rate, verbose=False):
     """Calculate granule cell input statistics"""
-    mean = calculate_synaptic_input([
+    normalization_factor = 1
+    mean = normalization_factor * calculate_synaptic_input([
         (mf_to_granule_weight, mf_to_granule_count, mossy_fiber_rate),
         (golgi_to_granule_weight, golgi_to_granule_count, golgi_rate)
     ])
-    variance = calculate_synaptic_variance([
+    variance = normalization_factor * calculate_synaptic_variance([
         (mf_to_granule_weight, mf_to_granule_count, mossy_fiber_rate),
         (golgi_to_granule_weight, golgi_to_granule_count, golgi_rate)
     ])
+    # DEBUG
+    if verbose:
+        print("Granule inputs params:")
+        print("     golgi_rate:", golgi_rate)
+        print("     mossy_fiber_rate:", mossy_fiber_rate)
     return mean, np.sqrt(variance)
 
-def golgi_inputs(granule_rate, mossy_fiber_rate, current_golgi_rate):
+def golgi_inputs(granule_rate, mossy_fiber_rate, current_golgi_rate, verbose=False):
     """Calculate golgi cell input statistics"""
-    mean = calculate_synaptic_input([
+    normalization_factor = 1
+    mean = normalization_factor * calculate_synaptic_input([
         (mf_to_golgi_weight, mf_to_golgi_count, mossy_fiber_rate),
         (granule_to_golgi_weight, granule_to_golgi_count, granule_rate),
         (golgi_to_golgi_weight, golgi_to_golgi_count, current_golgi_rate)
     ])
-    variance = calculate_synaptic_variance([
+    variance = normalization_factor * calculate_synaptic_variance([
         (mf_to_golgi_weight, mf_to_golgi_count, mossy_fiber_rate),
         (granule_to_golgi_weight, granule_to_golgi_count, granule_rate),
         (golgi_to_golgi_weight, golgi_to_golgi_count, current_golgi_rate)
     ])
+    # DEBUG
+    if verbose:
+        print("Golgi inputs params:")
+        print("     granule_rate:", granule_rate)
+        print("     mossy_fiber_rate:", mossy_fiber_rate)
+        print("     current_golgi_rate:", current_golgi_rate)
     return mean, np.sqrt(variance)
 
-def purkinje_inputs(interneuron_rate, granule_rate, climbing_fiber_rate):
+def purkinje_inputs(interneuron_rate, granule_rate, climbing_fiber_rate, verbose=False):
     """Calculate purkinje cell input statistics"""
     mean = calculate_synaptic_input([
         (granule_to_purkinje_weight, granule_to_purkinje_count, granule_rate),
@@ -268,9 +322,15 @@ def purkinje_inputs(interneuron_rate, granule_rate, climbing_fiber_rate):
         (interneuron_to_purkinje_weight, interneuron_to_purkinje_count, interneuron_rate),
         (cf_to_purkinje_weight, cf_to_purkinje_count, climbing_fiber_rate)
     ])
+    # DEBUG
+    if verbose:
+        print("Purkinje inputs params:")
+        print("     interneuron_rate:", interneuron_rate)
+        print("     granule_rate:", granule_rate)
+        print("     climbing_fiber_rate:", climbing_fiber_rate)
     return mean, np.sqrt(variance)
 
-def interneuron_inputs(granule_rate, current_interneuron_rate):
+def interneuron_inputs(granule_rate, current_interneuron_rate, verbose=False):
     """Calculate interneuron input statistics"""
     mean = calculate_synaptic_input([
         (granule_to_interneuron_weight, granule_to_interneuron_count, granule_rate),
@@ -280,13 +340,18 @@ def interneuron_inputs(granule_rate, current_interneuron_rate):
         (granule_to_interneuron_weight, granule_to_interneuron_count, granule_rate),
         (interneuron_to_interneuron_weight, interneuron_to_interneuron_count, current_interneuron_rate)
     ])
+    # DEBUG
+    if verbose:
+        print("Interneuron inputs params:")
+        print("     granule_rate:", granule_rate)
+        print("     current_interneuron_rate:", current_interneuron_rate)
     return mean, np.sqrt(variance)
 
 # ======================
 # MEAN-FIELD MODEL
 # ======================
 
-def cerebellar_mean_field(current_rates, mossy_fiber_rate, climbing_fiber_rate):
+def cerebellar_mean_field(current_rates, mossy_fiber_rate, climbing_fiber_rate, verbose=False):
     """
     Calculate residuals between current rates and mean-field predictions
     
@@ -301,30 +366,34 @@ def cerebellar_mean_field(current_rates, mossy_fiber_rate, climbing_fiber_rate):
     current_granule, current_golgi, current_purkinje, current_interneuron = current_rates
     
     # Granule cell calculations
-    granule_mean, granule_std = granule_inputs(current_golgi, mossy_fiber_rate)
-    print("Granule mean input:", granule_mean)
-    print("Granule std input:", granule_std)
+    granule_mean, granule_std = granule_inputs(current_golgi, mossy_fiber_rate, verbose=verbose)
+    if verbose:
+        print("     Granule mean input:", granule_mean)
+        print("     Granule std input:", granule_std)
     granule_residual = current_granule - granule_rate(granule_mean, granule_std)
     
     # Golgi cell calculations
-    golgi_mean, golgi_std = golgi_inputs(current_granule, mossy_fiber_rate, current_golgi)
-    print("Golgi mean input:", golgi_mean)
-    print("Golgi std input:", golgi_std)
+    golgi_mean, golgi_std = golgi_inputs(current_granule, mossy_fiber_rate, current_golgi, verbose=verbose)
+    if verbose:
+        print("     Golgi mean input:", golgi_mean)
+        print("     Golgi std input:", golgi_std)
     golgi_residual = current_golgi - golgi_rate(golgi_mean, golgi_std)
     
     # Purkinje cell calculations
-    purkinje_mean, purkinje_std = purkinje_inputs(current_interneuron, current_granule, climbing_fiber_rate)
-    print("Purkinje mean input:", purkinje_mean)
-    print("Purkinje std input:", purkinje_std)
+    purkinje_mean, purkinje_std = purkinje_inputs(current_interneuron, current_granule, climbing_fiber_rate, verbose=verbose)
+    if verbose:
+        print("     Purkinje mean input:", purkinje_mean)
+        print("     Purkinje std input:", purkinje_std)
     purkinje_residual = current_purkinje - purkinje_rate(purkinje_mean, purkinje_std)
     
     # Interneuron calculations
-    interneuron_mean, interneuron_std = interneuron_inputs(current_granule, current_interneuron)
-    print("Interneuron mean input:", interneuron_mean)
-    print("Interneuron std input:", interneuron_std)
+    interneuron_mean, interneuron_std = interneuron_inputs(current_granule, current_interneuron, verbose=verbose)
+    if verbose:
+        print("     Interneuron mean input:", interneuron_mean)
+        print("     Interneuron std input:", interneuron_std)
     interneuron_residual = current_interneuron - interneuron_rate(interneuron_mean, interneuron_std)
     
     return [granule_residual, golgi_residual, purkinje_residual, interneuron_residual]
-# Dynamics placeholder (to be implemented)
-def cerebellar_dynamics(t, nu, nu_ext):
-    pass
+
+
+

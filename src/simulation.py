@@ -16,28 +16,12 @@ def setup_network():
     climbing_fibers = models.create_climbing_fibers(config.CLIMBING_FIBER_NUM)
     
     # Connect populations following cerebellar connectivity rules:
+    models.connect_all(
+        mossy_fibers, climbing_fibers, granule_cells, golgi_cells, purkinje_cells, interneurons, dcn_cells
+    )
     
-    # 1. Connect mossy fibers to granule cells (excitatory)
-    models.connect_mossy_to_granule(mossy_fibers, granule_cells)
-    
-    # 2. Connect mossy fibers to deep cerebellar nuclei (excitatory)
-    models.connect_mossy_to_dcn(mossy_fibers, dcn_cells)
-    
-    # 3. Connect granule cells (via parallel fibers) to Purkinje cells (excitatory)
-    models.connect_granule_to_purkinje(granule_cells, purkinje_cells)
-    
-    # 4. Connect climbing fibers to Purkinje cells (powerful excitatory input)
-    models.connect_climbing_to_purkinje(climbing_fibers, purkinje_cells)
-    
-    # 5. Connect Golgi cells to granule cells (inhibitory)
-    models.connect_golgi_to_granule(golgi_cells, granule_cells)
-    
-    # 6. Connect interneurons (basket/stellate cells) to Purkinje cells (inhibitory)
-    models.connect_interneuron_to_purkinje(interneurons, purkinje_cells)
-    
-    # 7. Connect Purkinje cells to deep cerebellar nuclei (inhibitory)
-    models.connect_purkinje_to_dcn(purkinje_cells, dcn_cells)
-    
+    print ("Network setup complete.")
+
     # Return all populations in a dictionary for later use
     return {
         "granule": granule_cells,
@@ -68,18 +52,17 @@ def example_simulation():
     # Attach recorders to populations of interest
     sd_purkinje = attach_recorders(network["purkinje"], record_type="spikes")
     vd_purkinje = attach_recorders(network["purkinje"], record_type="voltages")
+    sd_dcn = attach_recorders(network["dcn"], record_type="spikes")
+    vd_dcn = attach_recorders(network["dcn"], record_type="voltages")
     
     # Run simulation for the specified simulation time
+    print ("Simulation running...")
     nest.Simulate(config.SIM_TIME)
-    
+
     # Return recorded data
     return {
         "purkinje_spikes": nest.GetStatus(sd_purkinje, keys="events")[0],
         "purkinje_voltages": nest.GetStatus(vd_purkinje, keys="events")[0],
+        "dcn_spikes": nest.GetStatus(sd_dcn, keys="events")[0],
+        "dcn_voltages": nest.GetStatus(vd_dcn, keys="events")[0],
     }
-
-def run_simulation():
-    nest.ResetKernel()
-    network = setup_network()
-    nest.Simulate(config.SIM_TIME)
-    return network
