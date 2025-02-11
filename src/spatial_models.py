@@ -1,6 +1,7 @@
 # src/spatial_models.py
 import nest
 import nest.random
+import nest.raster_plot
 import src.config as config
 
 # Apply the simulation settings to NEST
@@ -94,20 +95,29 @@ def create_spatial_deep_cerebellar_nuclei(n):
     dcn_cells = nest.Create("iaf_psc_alpha", n, params=config.DEEP_CEREBELLAR_NUCLEI_PARAMS, positions=pos)
     return dcn_cells
 
-def example_show():
+def setup_spatial_network():
+    # Reset the NEST kernel
+    nest.ResetKernel()
+
     # Create the populations
-    mossy_fibers = create_spatial_mossy_fibers(100)
-    climbing_fibers = create_spatial_climbing_fibers(10)
-    granule_cells = create_spatial_granule_cells(1000)
-    golgi_cells = create_spatial_golgi_cells(100)
-    purkinje_cells = create_spatial_purkinje_cells(100)
-    interneurons = create_spatial_interneurons(100)
-    dcn_cells = create_spatial_deep_cerebellar_nuclei(100)
-    fig = nest.PlotLayer(mossy_fibers)
-    nest.PlotLayer(climbing_fibers, fig, nodecolor="red")
-    nest.PlotLayer(granule_cells, fig, nodecolor="green")
-    nest.PlotLayer(golgi_cells, fig, nodecolor="yellow")
-    nest.PlotLayer(purkinje_cells, fig, nodecolor="black")
-    nest.PlotLayer(interneurons, fig, nodecolor="brown")
-    nest.PlotLayer(dcn_cells, fig, nodecolor="white")
-    return fig
+    mossy_fibers = create_spatial_mossy_fibers(config.MOSSY_FIBER_NUM)
+    climbing_fibers = create_spatial_climbing_fibers(config.CLIMBING_FIBER_NUM)
+    granule_cells = create_spatial_granule_cells(config.GRANULE_CELL_NUM)
+    golgi_cells = create_spatial_golgi_cells(config.GOLGI_CELL_NUM)
+    purkinje_cells = create_spatial_purkinje_cells(config.PURKINJE_CELL_NUM)
+    interneurons = create_spatial_interneurons(config.INTERNEURON_NUM)
+    dcn_cells = create_spatial_deep_cerebellar_nuclei(config.DEEP_CEREBELLAR_NUCLEI_NUM)
+
+    # Connect the populations
+    
+    ### TO DO
+    
+    fig = nest.PlotLayer(mossy_fibers, nodecolor="purple", nodesize=2)
+    nest.PlotLayer(climbing_fibers, fig, nodecolor="black", nodesize=10)
+    nest.PlotLayer(granule_cells, fig, nodecolor="red", nodesize=1)
+    nest.PlotLayer(golgi_cells, fig, nodecolor="blue", nodesize=40)
+    nest.PlotLayer(purkinje_cells, fig, nodecolor="green", nodesize=40)
+    nest.PlotLayer(interneurons, fig, nodecolor="orange", nodesize=15)
+    nest.PlotLayer(dcn_cells, fig, nodecolor="purple", nodesize=30)
+
+    return mossy_fibers, climbing_fibers, granule_cells, golgi_cells, purkinje_cells, interneurons, dcn_cells

@@ -11,7 +11,7 @@ DT       = 0.1      # Integration time step in ms
 MOSSY_FIBER_PARAMS = {
     "rate": 550.0,  
 }
-MOSSY_FIBER_NUM = 500
+MOSSY_FIBER_NUM = 2500
 
 CLIMBING_FIBER_PARAMS = {
     "rate": 3.5,     
@@ -28,7 +28,7 @@ GRANULE_CELL_PARAMS = {
     "V_reset": -68.0, # Reset potential (mV)
     "t_ref": 2.0      # Refractory period (ms)
 }
-GRANULE_CELL_NUM = 500
+GRANULE_CELL_NUM = 2500
 
 GOLGI_CELL_PARAMS = {
     "tau_m": 22.0,
