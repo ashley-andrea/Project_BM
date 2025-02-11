@@ -4,6 +4,11 @@ from scipy.special import erf
 from scipy.optimize import least_squares
 from src.config import *
 
+
+### DO NOT CONSIDER THIS ####
+### WILL REMOVE THIS LATER ###
+
+
 # ======================
 # UTILITIES
 # ======================

@@ -47,6 +47,7 @@ PURKINJE_CELL_PARAMS = {
     "t_ref": 5.0
 }
 PURKINJE_CELL_NUM = 50
+PURKINJE_CELL_NUM_LAYERS = 2
 
 INTERNEURON_PARAMS = {  
     "tau_m": 12.0,
@@ -187,6 +188,18 @@ CONN_PURKINJE_TO_DCN = {
 }
 
 # =============================================================================
+# Spatial parameters
+# =============================================================================
+
+# Granule cell layer
+GRANULE_LAYER_SIZE = [100.0, 100.0, 1.0] 
+
+# Purkinje cell layer
+
+
+
+# =============================================================================
 # Random Seed for reproducibility
 # =============================================================================
 SEED = 42
+
