@@ -9,14 +9,14 @@ DT       = 0.1      # Integration time step in ms
 # Poisson generator inputs (Mossy/Climbing Fibers)
 # =============================================================================
 MOSSY_FIBER_PARAMS = {
-    "rate": 550.0,  
+    "rate": 350.0,  
 }
-MOSSY_FIBER_NUM = 2500
+MOSSY_FIBER_NUM = 1200
 
 CLIMBING_FIBER_PARAMS = {
-    "rate": 3.5,     
+    "rate": 1.0,     
 }
-CLIMBING_FIBER_NUM = 50 
+CLIMBING_FIBER_NUM = 64
 
 # =============================================================================
 # Cerebellar cell population parameters
@@ -28,7 +28,7 @@ GRANULE_CELL_PARAMS = {
     "V_reset": -68.0, # Reset potential (mV)
     "t_ref": 2.0      # Refractory period (ms)
 }
-GRANULE_CELL_NUM = 2500
+GRANULE_CELL_NUM = 1000
 
 GOLGI_CELL_PARAMS = {
     "tau_m": 22.0,
@@ -37,7 +37,7 @@ GOLGI_CELL_PARAMS = {
     "V_reset": -68.0,
     "t_ref": 2.0
 }
-GOLGI_CELL_NUM = 500
+GOLGI_CELL_NUM = 200
 
 PURKINJE_CELL_PARAMS = {
     "tau_m": 35.0,
@@ -46,8 +46,8 @@ PURKINJE_CELL_PARAMS = {
     "V_reset": -78.0,
     "t_ref": 5.0
 }
-PURKINJE_CELL_NUM = 50
-PURKINJE_CELL_NUM_LAYERS = 2
+PURKINJE_CELL_NUM = 64
+PURKINJE_CELL_NUM_LAYERS = 1
 
 INTERNEURON_PARAMS = {  
     "tau_m": 12.0,
@@ -65,7 +65,7 @@ DEEP_CEREBELLAR_NUCLEI_PARAMS = {
     "V_reset": -68.0,
     "t_ref": 2.0
 }
-DEEP_CEREBELLAR_NUCLEI_NUM = 50
+DEEP_CEREBELLAR_NUCLEI_NUM = 30
 
 # =============================================================================
 # Synaptic parameters (weights in nS, delays in ms)

@@ -1,6 +1,6 @@
 TODO LIST
 
-- [ ] Finish spatial modeling (connections remaining)
+- [X] Finish spatial modeling (connections remaining)
 - [ ] Observe changes with reasonable data (tweak data in config.py until good behaviour)
 - [ ] Analyze the behaviour of SNN in NEST
 - [ ] Analyze the steady states
