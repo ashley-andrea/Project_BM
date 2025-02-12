@@ -2,12 +2,14 @@
 # =============================================================================
 # Simulation parameters
 # =============================================================================
+
 SIM_TIME = 1000.0   # Total simulation time in ms (increased for robust mean-field convergence)
 DT       = 0.1      # Integration time step in ms
 
 # =============================================================================
 # Poisson generator inputs (Mossy/Climbing Fibers)
 # =============================================================================
+
 MOSSY_FIBER_PARAMS = {
     "rate": 350.0,  
 }
@@ -21,6 +23,7 @@ CLIMBING_FIBER_NUM = 64
 # =============================================================================
 # Cerebellar cell population parameters
 # =============================================================================
+
 GRANULE_CELL_PARAMS = {
     "tau_m": 12.0,    # Membrane time constant (ms), increased slightly for mean field smoothing
     "E_L": -68.0,     # Resting potential (mV)
@@ -70,6 +73,7 @@ DEEP_CEREBELLAR_NUCLEI_NUM = 30
 # =============================================================================
 # Synaptic parameters (weights in nS, delays in ms)
 # =============================================================================
+
 SYN_MF_TO_GRANULE = {
     "weight": 1.2,   # Slightly reduced weight to support mean field averaging
     "delay": 1.0
@@ -133,6 +137,7 @@ SYN_CLIMBING = {
 # =============================================================================
 # Connectivity rules
 # =============================================================================
+
 CONN_MF_TO_GRANULE = {
     "rule": "pairwise_bernoulli",
     "p": 0.01  # Increased probability to yield denser connections in the mean field limit
@@ -188,18 +193,8 @@ CONN_PURKINJE_TO_DCN = {
 }
 
 # =============================================================================
-# Spatial parameters
-# =============================================================================
-
-# Granule cell layer
-GRANULE_LAYER_SIZE = [100.0, 100.0, 1.0] 
-
-# Purkinje cell layer
-
-
-
-# =============================================================================
 # Random Seed for reproducibility
 # =============================================================================
+
 SEED = 42
 
