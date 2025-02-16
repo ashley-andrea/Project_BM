@@ -13,12 +13,12 @@ DT       = 0.1      # Integration time step in ms
 MOSSY_FIBER_PARAMS = {
     "rate": 350.0,  
 }
-MOSSY_FIBER_NUM = 1200
+MOSSY_FIBER_NUM = 2500
 
 CLIMBING_FIBER_PARAMS = {
     "rate": 1.0,     
 }
-CLIMBING_FIBER_NUM = 64
+CLIMBING_FIBER_NUM = 256
 
 # =============================================================================
 # Cerebellar cell population parameters
@@ -27,11 +27,11 @@ CLIMBING_FIBER_NUM = 64
 GRANULE_CELL_PARAMS = {
     "tau_m": 12.0,    # Membrane time constant (ms), increased slightly for mean field smoothing
     "E_L": -68.0,     # Resting potential (mV)
-    "V_th": -38.0,    # Firing threshold (mV)
+    "V_th": -42.0,    # Firing threshold (mV)
     "V_reset": -68.0, # Reset potential (mV)
     "t_ref": 2.0      # Refractory period (ms)
 }
-GRANULE_CELL_NUM = 1000
+GRANULE_CELL_NUM = 25000
 
 GOLGI_CELL_PARAMS = {
     "tau_m": 22.0,
@@ -40,7 +40,7 @@ GOLGI_CELL_PARAMS = {
     "V_reset": -68.0,
     "t_ref": 2.0
 }
-GOLGI_CELL_NUM = 200
+GOLGI_CELL_NUM = 100
 
 PURKINJE_CELL_PARAMS = {
     "tau_m": 35.0,
@@ -49,7 +49,7 @@ PURKINJE_CELL_PARAMS = {
     "V_reset": -78.0,
     "t_ref": 5.0
 }
-PURKINJE_CELL_NUM = 64
+PURKINJE_CELL_NUM = 256
 PURKINJE_CELL_NUM_LAYERS = 1
 
 INTERNEURON_PARAMS = {  
@@ -59,7 +59,7 @@ INTERNEURON_PARAMS = {
     "V_reset": -68.0,
     "t_ref": 2.0
 }
-INTERNEURON_NUM = 100
+INTERNEURON_NUM = 450
 
 DEEP_CEREBELLAR_NUCLEI_PARAMS = {
     "tau_m": 35.0,
@@ -68,19 +68,19 @@ DEEP_CEREBELLAR_NUCLEI_PARAMS = {
     "V_reset": -68.0,
     "t_ref": 2.0
 }
-DEEP_CEREBELLAR_NUCLEI_NUM = 30
+DEEP_CEREBELLAR_NUCLEI_NUM = 50
 
 # =============================================================================
 # Synaptic parameters (weights in nS, delays in ms)
 # =============================================================================
 
 SYN_MF_TO_GRANULE = {
-    "weight": 1.2,   # Slightly reduced weight to support mean field averaging
+    "weight": 15,  
     "delay": 1.0
 }
 
 SYN_MF_TO_GOLGI = {
-    "weight": 1.0,
+    "weight": 10,
     "delay": 1.0
 }
 

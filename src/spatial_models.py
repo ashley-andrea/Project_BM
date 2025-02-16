@@ -68,7 +68,7 @@ def create_spatial_purkinje_cells(n):
         n_per_side = 5
     pos = nest.spatial.grid(
         shape = [n_per_side, n_per_side, config.PURKINJE_CELL_NUM_LAYERS],
-        center = [0.0, 0.0, 4.5],
+        center = [0.0, 0.0, 4.25],
         extent = (2, 2, 1))
     purkinje_cells = nest.Create("iaf_psc_alpha", params=config.PURKINJE_CELL_PARAMS, positions=pos)
     return purkinje_cells
@@ -80,7 +80,7 @@ def create_spatial_interneurons(n):
         pos = [
             nest.random.uniform(-1.0, 1.0),
             nest.random.uniform(-1.0, 1.0),
-            nest.random.uniform(6.0, 7.0)
+            nest.random.uniform(4.5, 5.5)
         ], extent = (3, 3, 3))
     interneurons = nest.Create("iaf_psc_alpha", n, params=config.INTERNEURON_PARAMS, positions=pos)
     return interneurons
@@ -95,3 +95,239 @@ def create_spatial_deep_cerebellar_nuclei(n):
         ], extent = (3, 3, 3))
     dcn_cells = nest.Create("iaf_psc_alpha", n, params=config.DEEP_CEREBELLAR_NUCLEI_PARAMS, positions=pos)
     return dcn_cells
+
+# =============================================================================
+# Connectivity rules
+# =============================================================================
+
+# Mossy Fibers Connections
+
+def connect_spatial_mossy_to_granule(mossy, granule):
+    """
+    Mossy -> Granule: Vertical column-like connectivity (z-oriented ellipsoid)
+    """
+    parameter = config.CONN_MF_TO_GRANULE["p"]
+    conndict = {
+        "rule": "pairwise_bernoulli",
+        "p": parameter,
+        "mask": {
+            "ellipsoidal": {
+                "major_axis": 5.0,  # Vertical orientation
+                "minor_axis": 0.8,
+                "polar_axis": 0.8,
+                "polar_angle": 90  # Align major axis with z-axis
+            }
+        }
+    }
+    syndict = config.SYN_MF_TO_GRANULE
+    nest.Connect(mossy, granule, conn_spec=conndict, syn_spec=syndict)
+
+def connect_spatial_mossy_to_golgi(mossy, golgi):
+    """Mossy -> Golgi: Moderate vertical spread"""
+    parameter = config.CONN_MF_TO_GOLGI["p"]
+    conndict = {
+        "rule": "pairwise_bernoulli",
+        "p": parameter,
+        "mask": {
+            "ellipsoidal": {
+                "major_axis": 4.0,  # Vertical orientation
+                "minor_axis": 1.5,
+                "polar_axis": 1.5,
+                "polar_angle": 90
+            }
+        }
+    }
+    syndict = config.SYN_MF_TO_GOLGI
+    nest.Connect(mossy, golgi, conn_spec=conndict, syn_spec=syndict)
+
+def connect_spatial_mossy_to_dcn(mossy, dcn):
+    """Mossy -> DCN: Horizontal spread in same layer"""
+    parameter = 0.2
+    conndict = {
+        "rule": "pairwise_bernoulli",
+        "p": parameter,
+        "mask": {
+            "ellipsoidal": {
+                "major_axis": 3.0,  # Horizontal orientation
+                "minor_axis": 1.5,
+                "polar_axis": 1.5,
+                "polar_angle": 0  # Major axis in xy-plane
+            }
+        }
+    }
+    syndict = config.SYN_MF_TO_DCN
+    nest.Connect(mossy, dcn, conn_spec=conndict, syn_spec=syndict)
+
+def connect_spatial_granule_to_golgi(granule, golgi):
+    """Granule -> Golgi: Local spherical connections"""
+    parameter = config.CONN_GRANULE_TO_GOLGI["p"]
+    conndict = {
+        "rule": "pairwise_bernoulli",
+        "p": parameter,
+        "mask": {
+            "ellipsoidal": {
+                "major_axis": 2.0,
+                "minor_axis": 2.0,
+                "polar_axis": 2.0,
+                "polar_angle": 0  # Spherical orientation
+            }
+        }
+    }
+    syndict = config.SYN_GRANULE_TO_GOLGI
+    nest.Connect(granule, golgi, conn_spec=conndict, syn_spec=syndict)
+
+def connect_spatial_granule_to_purkinje(granule, purkinje):
+    """Granule -> Purkinje (Parallel fibers): Long horizontal spread"""
+    parameter = config.CONN_GRANULE_TO_PURKINJE["p"]
+    conndict = {
+        "rule": "pairwise_bernoulli",
+        "p": parameter,
+        "mask": {
+            "ellipsoidal": {
+                "major_axis": 8.0,  # Horizontal orientation (parallel fibers)
+                "minor_axis": 1.5,
+                "polar_axis": 1.5,
+                "polar_angle": 0  # Major axis in xy-plane
+            }
+        }
+    }
+    syndict = config.SYN_PARALLEL
+    nest.Connect(granule, purkinje, conn_spec=conndict, syn_spec=syndict)
+
+def connect_spatial_granule_to_interneuron(granule, interneuron):
+    """Connect granule cells to interneurons with excitatory synapses."""
+    parameter = config.CONN_GRANULE_TO_INTERNEURON["p"]
+    conndict = {
+        "rule": "pairwise_bernoulli",
+        "p": parameter,
+        "mask": {
+            "ellipsoidal": {
+                "major_axis": 6.0,
+                "minor_axis": 2.0,
+                "polar_axis": 2.0,
+                "polar_angle": 90
+            }
+        }
+    }
+    syndict = config.SYN_GRANULE_TO_INTERNEURON
+    nest.Connect(granule, interneuron, conn_spec=conndict, syn_spec=syndict)
+
+def connect_spatial_golgi_to_granule(golgi, granule):
+    """Connect Golgi cells to granule cells with inhibitory synapses."""
+    parameter = config.CONN_GOLGI_TO_GRANULE["p"]
+    conndict = {
+        "rule": "pairwise_bernoulli",
+        "p": parameter,
+        "mask": {
+            "ellipsoidal": {
+                "major_axis": 5.0,
+                "minor_axis": 5.0,
+                "polar_axis": 1.0,
+                "polar_angle": 0
+            }
+        }
+    }
+    syndict = config.SYN_GOLGI_TO_GRANULE
+    nest.Connect(golgi, granule, conn_spec=conndict, syn_spec=syndict)
+
+def connect_spatial_golgi_to_golgi(golgi):
+    """Connect Golgi cells to each other with inhibitory synapses."""
+    parameter = config.CONN_GOLGI_TO_GOLGI["p"]
+    conndict = {
+        "rule": "pairwise_bernoulli",
+        "p": parameter,
+        "mask": {
+            "ellipsoidal": {
+                "major_axis": 3.0,
+                "minor_axis": 3.0,
+                "polar_axis": 1.0,
+                "polar_angle": 0
+            }
+        }
+    }
+    syndict = config.SYN_GOLGI_TO_GOLGI
+    nest.Connect(golgi, golgi, conn_spec=conndict, syn_spec=syndict)
+
+def connect_spatial_climbing_to_purkinje(climbing, purkinje):
+    """Connect climbing fibers to Purkinje cells with strong excitatory synapses."""
+    if len(climbing) != len(purkinje):
+        raise ValueError("Number of climbing fibers must match number of Purkinje cells.")
+    conndict = {
+        "rule": "one_to_one"
+    }
+    syndict = config.SYN_CLIMBING
+    nest.Connect(climbing, purkinje, conn_spec=conndict, syn_spec=syndict)
+
+def connect_spatial_interneuron_to_purkinje(interneuron, purkinje):
+    """Connect interneurons to Purkinje cells with excitatory synapses."""
+    parameter = config.CONN_INTERNEURON_TO_PURKINJE["p"]
+    conndict = {
+        "rule": "pairwise_bernoulli",
+        "p": parameter,
+        "mask": {
+            "ellipsoidal": {
+                "major_axis": 2.0,
+                "minor_axis": 1.0,
+                "polar_axis": 1.0,
+                "polar_angle": 90
+            }
+        }
+    }
+    syndict = config.SYN_INTERNEURON_TO_PURKINJE
+    nest.Connect(interneuron, purkinje, conn_spec=conndict, syn_spec=syndict)
+
+def connect_spatial_interneuron_to_interneuron(interneuron):
+    """Connect interneurons to each other with inhibitory synapses."""
+    parameter = config.CONN_INTERNEURON_TO_INTERNEURON["p"]
+    conndict = {
+        "rule": "pairwise_bernoulli",
+        "p": parameter,
+        "mask": {
+            "ellipsoidal": {
+                "major_axis": 4.0,
+                "minor_axis": 4.0,
+                "polar_axis": 0.5,
+                "polar_angle": 0
+            }
+        }
+    }
+    syndict = config.SYN_INTERNEURON_TO_INTERNEURON
+    nest.Connect(interneuron, interneuron, conn_spec=conndict, syn_spec=syndict)
+
+def connect_spatial_purkinje_to_dcn(purkinje, dcn):
+    """Connect Purkinje cells to DCN cells with inhibitory synapses."""
+    parameter = config.CONN_PURKINJE_TO_DCN["outdegree"]
+    conndict = {
+        "rule": "fixed_outdegree",
+        "outdegree": parameter
+    }
+    syndict = config.SYN_PURKINJE_TO_DCN
+    nest.Connect(purkinje, dcn, conn_spec=conndict, syn_spec=syndict)
+
+def connect_spatial_all(mossy, climbing, granule, golgi, purkinje, interneuron, dcn):
+    """Connect all populations according to cerebellar connectivity rules."""
+    connect_spatial_mossy_to_granule(mossy, granule)
+    connect_spatial_mossy_to_golgi(mossy, golgi)
+    connect_spatial_mossy_to_dcn(mossy, dcn)
+    connect_spatial_granule_to_golgi(granule, golgi)
+    connect_spatial_granule_to_purkinje(granule, purkinje)
+    connect_spatial_granule_to_interneuron(granule, interneuron)
+    connect_spatial_golgi_to_granule(golgi, granule)
+    connect_spatial_golgi_to_golgi(golgi)
+    connect_spatial_climbing_to_purkinje(climbing, purkinje)
+    connect_spatial_interneuron_to_purkinje(interneuron, purkinje)
+    connect_spatial_interneuron_to_interneuron(interneuron)
+    connect_spatial_purkinje_to_dcn(purkinje, dcn)
+    # Print the amount of connections
+    print(f"Number of mossy -> granule connections: {len(nest.GetConnections(source=mossy, target=granule))}")
+    print(f"Number of mossy -> golgi connections: {len(nest.GetConnections(source=mossy, target=golgi))}")
+    print(f"Number of mossy -> DCN connections: {len(nest.GetConnections(source=mossy, target=dcn))}")
+    print(f"Number of granule -> golgi connections: {len(nest.GetConnections(source=granule, target=golgi))}")
+    print(f"Number of granule -> purkinje connections: {len(nest.GetConnections(source=granule, target=purkinje))}")
+    print(f"Number of granule -> interneuron connections: {len(nest.GetConnections(source=granule, target=interneuron))}")
+    print(f"Number of golgi -> granule connections: {len(nest.GetConnections(source=golgi, target=granule))}")
+    print(f"Number of golgi -> golgi connections: {len(nest.GetConnections(source=golgi, target=golgi))}")
+    print(f"Number of climbing -> purkinje connections: {len(nest.GetConnections(source=climbing, target=purkinje))}")
+    print(f"Number of interneuron -> purkinje connections: {len(nest.GetConnections(source=interneuron, target=purkinje))}")
+    print(f"Number of interneuron -> interneuron connections: {len(nest.GetConnections(source=interneuron, target=interneuron))}")
+    print(f"Number of purkinje -> DCN connections: {len(nest.GetConnections(source=purkinje, target=dcn))}")

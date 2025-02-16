@@ -3,6 +3,8 @@ import nest
 import src.config as config 
 import src.models as models
 import src.spatial_models as spatial_models
+import matplotlib.pyplot as plt
+import numpy as np
 
 def setup_network():
     """Set up the cerebellar network architecture."""
@@ -44,19 +46,81 @@ def setup_spatial_network(plot_model=False):
     climbing_fibers = spatial_models.create_spatial_climbing_fibers(config.CLIMBING_FIBER_NUM)
 
     # Connect populations following cerebellar connectivity rules:
-    models.connect_all(
+    spatial_models.connect_spatial_all(
         mossy_fibers, climbing_fibers, granule_cells, golgi_cells, purkinje_cells, interneurons, dcn_cells
     )
     print ("Network setup complete.")
 
     if plot_model:
-        fig = nest.PlotLayer(mossy_fibers, nodecolor="purple", nodesize=2)
-        nest.PlotLayer(climbing_fibers, fig, nodecolor="black", nodesize=10)
-        nest.PlotLayer(granule_cells, fig, nodecolor="red", nodesize=1)
-        nest.PlotLayer(golgi_cells, fig, nodecolor="blue", nodesize=40)
-        nest.PlotLayer(purkinje_cells, fig, nodecolor="green", nodesize=40)
-        nest.PlotLayer(interneurons, fig, nodecolor="orange", nodesize=15)
-        nest.PlotLayer(dcn_cells, fig, nodecolor="purple", nodesize=30)
+        # Colors
+        mossy_color = "darkorange"
+        climbing_color = "black"
+        granule_color = "red"
+        golgi_color = "blue"
+        purkinje_color = "green"
+        interneuron_color = "orange"
+        dcn_color = "purple"
+
+        # ---- Full-Network Plot using PlotLayer ----
+        fig = nest.PlotLayer(mossy_fibers, nodecolor=mossy_color, nodesize=2)
+        nest.PlotLayer(climbing_fibers, fig, nodecolor=climbing_color, nodesize=10)
+        nest.PlotLayer(granule_cells, fig, nodecolor=granule_color, nodesize=1)
+        nest.PlotLayer(golgi_cells, fig, nodecolor=golgi_color, nodesize=40)
+        nest.PlotLayer(purkinje_cells, fig, nodecolor=purkinje_color, nodesize=40)
+        nest.PlotLayer(interneurons, fig, nodecolor=interneuron_color, nodesize=15)
+        nest.PlotLayer(dcn_cells, fig, nodecolor=dcn_color, nodesize=30)
+
+        # Create legend with colors matching the nodes
+        legend_labels = ["Mossy Fibers", "Climbing Fibers", "Granule Cells", "Golgi Cells", 
+                         "Purkinje Cells", "Interneurons", "DCN Cells"]
+        legend_colors = [mossy_color, climbing_color, granule_color, golgi_color, purkinje_color, interneuron_color, dcn_color]
+        handles = [plt.Line2D([0], [0], marker='o', color='w', markersize=8, markerfacecolor=c) 
+                   for c in legend_colors]
+        plt.legend(handles, legend_labels, loc="center left", bbox_to_anchor=(1, 0.5), fontsize=10)
+        plt.show()
+
+        # ---- Vertical Slice Plot ----
+        # Use the same figure dimensions as the full-network plot
+        fig_slice, ax_slice = plt.subplots(figsize=fig.get_size_inches())
+
+        def plot_vertical_slice(layer, color, name, nodesize, x_range=(-0.1, 0.1)):
+            """
+            Extract neurons within a narrow X-range and plot them on the Y-Z plane.
+            This mirrors the dimension mapping of the PlotLayer functions.
+            """
+            positions = np.array(nest.GetPosition(layer))  # positions assumed as [X, Y, Z]
+            slice_mask = (positions[:, 0] > x_range[0]) & (positions[:, 0] < x_range[1])
+            # Plot using Y for horizontal and Z for vertical
+            ax_slice.scatter(positions[slice_mask, 1],
+                             positions[slice_mask, 2],
+                             c=color,
+                             s=nodesize,  # using the same nodesize as in PlotLayer
+                             label=name)
+
+        # Define the narrow slice in the X-direction (to "cut" the 3D network)
+        slice_x_range = (0.1, 0.3)
+
+        # Plot each layer with the corresponding nodesize
+        plot_vertical_slice(mossy_fibers,    mossy_color,    "Mossy Fibers",    2,  slice_x_range)
+        plot_vertical_slice(climbing_fibers, climbing_color, "Climbing Fibers", 10, slice_x_range)
+        plot_vertical_slice(granule_cells,   granule_color,  "Granule Cells",   1,  slice_x_range)
+        plot_vertical_slice(golgi_cells,     golgi_color,    "Golgi Cells",     40, slice_x_range)
+        plot_vertical_slice(purkinje_cells,    purkinje_color, "Purkinje Cells",  40, slice_x_range)
+        plot_vertical_slice(interneurons,      interneuron_color, "Interneurons",15, slice_x_range)
+        plot_vertical_slice(dcn_cells,         dcn_color,      "DCN Cells",       30, slice_x_range)
+
+        # Label axes to match the PlotLayer projection
+        ax_slice.set_xlabel("Depth (Y-axis)")
+        ax_slice.set_ylabel("Height (Z-axis)")
+        ax_slice.set_title("Vertical Slice of the Network (Y-Z plane)")
+
+        # Move the legend outside of the image:
+        ax_slice.legend(loc="center left", bbox_to_anchor=(1, 0.5), fontsize=8)
+        ax_slice.set_aspect('equal', 'box')  # enforce equal scaling on Y and Z
+
+        plt.show()
+
+
 
     return {
         "granule": granule_cells,

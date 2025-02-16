@@ -69,7 +69,8 @@ def connect_mossy_to_granule(mossy, granule):
         mossy: The source population of mossy fibers.
         granule: The target population of granule cells.
     """
-    nest.Connect(mossy, granule, syn_spec=config.SYN_MF_TO_GRANULE)
+    nest.Connect(mossy, granule, conn_spec=config.CONN_MF_TO_GRANULE,
+                 syn_spec=config.SYN_MF_TO_GRANULE)
 
 def connect_mossy_to_golgi(mossy, golgi):
     """
@@ -79,7 +80,8 @@ def connect_mossy_to_golgi(mossy, golgi):
         mossy: The source population of mossy fibers.
         golgi: The target population of Golgi cells.
     """
-    nest.Connect(mossy, golgi, syn_spec=config.SYN_MF_TO_GOLGI)
+    nest.Connect(mossy, golgi, conn_spec=config.CONN_MF_TO_GOLGI,
+                 syn_spec=config.SYN_MF_TO_GOLGI)
 
 def connect_mossy_to_dcn(mossy, dcn):
     """
@@ -213,25 +215,32 @@ def connect_interneuron_to_interneuron(interneuron):
     nest.Connect(interneuron, interneuron, conn_spec=config.CONN_INTERNEURON_TO_INTERNEURON, 
                  syn_spec=config.SYN_INTERNEURON_TO_INTERNEURON)
     
-def connect_all(
-        mossy_fibers,
-        climbing_fibers,
-        granule_cells,
-        golgi_cells,
-        purkinje_cells,
-        interneurons,
-        dcn_cells
-):
-    """Connect all populations in the cerebellar network."""
-    connect_mossy_to_granule(mossy_fibers, granule_cells)
-    connect_mossy_to_golgi(mossy_fibers, golgi_cells)
-    connect_mossy_to_dcn(mossy_fibers, dcn_cells)
-    connect_granule_to_purkinje(granule_cells, purkinje_cells)
-    connect_granule_to_interneuron(granule_cells, interneurons)
-    connect_granule_to_golgi(granule_cells, golgi_cells)
-    connect_climbing_to_purkinje(climbing_fibers, purkinje_cells)
-    connect_purkinje_to_dcn(purkinje_cells, dcn_cells)
-    connect_golgi_to_granule(golgi_cells, granule_cells)
-    connect_golgi_to_golgi(golgi_cells)
-    connect_interneuron_to_purkinje(interneurons, purkinje_cells)
-    connect_interneuron_to_interneuron(interneurons)
+
+def connect_all(mossy, climbing, granule, golgi, purkinje, interneuron, dcn):
+    """Connect all populations according to cerebellar connectivity rules."""
+    connect_mossy_to_granule(mossy, granule)
+    connect_mossy_to_golgi(mossy, golgi)
+    connect_mossy_to_dcn(mossy, dcn)
+    connect_granule_to_golgi(granule, golgi)
+    connect_granule_to_purkinje(granule, purkinje)
+    connect_granule_to_interneuron(granule, interneuron)
+    connect_golgi_to_granule(golgi, granule)
+    connect_golgi_to_golgi(golgi)
+    connect_climbing_to_purkinje(climbing, purkinje)
+    connect_interneuron_to_purkinje(interneuron, purkinje)
+    connect_interneuron_to_interneuron(interneuron)
+    connect_purkinje_to_dcn(purkinje, dcn)
+
+    # Print the amount of connections
+    print(f"Number of mossy -> granule connections: {len(nest.GetConnections(source=mossy, target=granule))}")
+    print(f"Number of mossy -> golgi connections: {len(nest.GetConnections(source=mossy, target=golgi))}")
+    print(f"Number of mossy -> DCN connections: {len(nest.GetConnections(source=mossy, target=dcn))}")
+    print(f"Number of granule -> golgi connections: {len(nest.GetConnections(source=granule, target=golgi))}")
+    print(f"Number of granule -> purkinje connections: {len(nest.GetConnections(source=granule, target=purkinje))}")
+    print(f"Number of granule -> interneuron connections: {len(nest.GetConnections(source=granule, target=interneuron))}")
+    print(f"Number of golgi -> granule connections: {len(nest.GetConnections(source=golgi, target=granule))}")
+    print(f"Number of golgi -> golgi connections: {len(nest.GetConnections(source=golgi, target=golgi))}")
+    print(f"Number of climbing -> purkinje connections: {len(nest.GetConnections(source=climbing, target=purkinje))}")
+    print(f"Number of interneuron -> purkinje connections: {len(nest.GetConnections(source=interneuron, target=purkinje))}")
+    print(f"Number of interneuron -> interneuron connections: {len(nest.GetConnections(source=interneuron, target=interneuron))}")
+    print(f"Number of purkinje -> DCN connections: {len(nest.GetConnections(source=purkinje, target=dcn))}")
