@@ -2,10 +2,6 @@
 import nest
 from src import config
 
-# Apply the simulation settings to NEST
-nest.ResetKernel()
-nest.SetKernelStatus({"resolution": config.DT, "print_time": True, "rng_seed": config.SEED})
-
 # -----------------------------------------------------------
 # Population creation functions
 # -----------------------------------------------------------

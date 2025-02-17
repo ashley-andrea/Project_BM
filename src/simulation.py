@@ -6,6 +6,10 @@ import src.spatial_models as spatial_models
 import matplotlib.pyplot as plt
 import numpy as np
 
+# Apply the simulation settings to NEST
+nest.ResetKernel()
+nest.SetKernelStatus({"resolution": config.DT, "print_time": True, "rng_seed": config.SEED})
+
 def setup_network():
     """Set up the cerebellar network architecture."""
     # Create cell populations using numbers from the config file

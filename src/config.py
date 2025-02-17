@@ -175,7 +175,7 @@ CONN_INTERNEURON_TO_INTERNEURON = {
 
 CONN_GRANULE_TO_PURKINJE = {
     "rule": "pairwise_bernoulli",
-    "p": 0.7
+    "p": 0.9
 }
 
 CONN_CLIMBING_TO_PURKINJE = {
