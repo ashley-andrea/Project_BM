@@ -11,9 +11,9 @@ DT       = 0.1      # Integration time step in ms
 # =============================================================================
 
 MOSSY_FIBER_PARAMS = {
-    "rate": 350.0,  
+    "rate": 150.0,  
 }
-MOSSY_FIBER_NUM = 2500
+MOSSY_FIBER_NUM = 2000
 
 CLIMBING_FIBER_PARAMS = {
     "rate": 1.0,     
@@ -31,7 +31,7 @@ GRANULE_CELL_PARAMS = {
     "V_reset": -68.0, # Reset potential (mV)
     "t_ref": 2.0      # Refractory period (ms)
 }
-GRANULE_CELL_NUM = 25000
+GRANULE_CELL_NUM = 10000
 
 GOLGI_CELL_PARAMS = {
     "tau_m": 22.0,
@@ -130,7 +130,7 @@ SYN_PURKINJE_TO_DCN = {
 }
 
 SYN_CLIMBING = {
-    "weight": 4.0,
+    "weight": 30.0,
     "delay": 1.0
 }
 
@@ -140,17 +140,17 @@ SYN_CLIMBING = {
 
 CONN_MF_TO_GRANULE = {
     "rule": "pairwise_bernoulli",
-    "p": 0.01  # Increased probability to yield denser connections in the mean field limit
+    "p": 0.05  # Increased probability to yield denser connections in the mean field limit
 }
 
 CONN_MF_TO_GOLGI = {
     "rule": "pairwise_bernoulli",
-    "p": 0.02  # Adjusted to balance the increased number of granule and Golgi cells
+    "p": 0.2  
 }
 
 CONN_GRANULE_TO_GOLGI = {
     "rule": "pairwise_bernoulli",
-    "p": 0.15
+    "p": 0.01
 }
 
 CONN_GOLGI_TO_GRANULE = {

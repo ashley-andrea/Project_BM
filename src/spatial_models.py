@@ -113,13 +113,14 @@ def connect_spatial_mossy_to_granule(mossy, granule):
         "mask": {
             "ellipsoidal": {
                 "major_axis": 5.0,  # Vertical orientation
-                "minor_axis": 0.8,
-                "polar_axis": 0.8,
+                "minor_axis": 1.8,
+                "polar_axis": 1.8,
                 "polar_angle": 90  # Align major axis with z-axis
             }
         }
     }
     syndict = config.SYN_MF_TO_GRANULE
+    syndict["weight"] = syndict["weight"] - 0.5 * nest.spatial.distance
     nest.Connect(mossy, granule, conn_spec=conndict, syn_spec=syndict)
 
 def connect_spatial_mossy_to_golgi(mossy, golgi):
@@ -138,6 +139,7 @@ def connect_spatial_mossy_to_golgi(mossy, golgi):
         }
     }
     syndict = config.SYN_MF_TO_GOLGI
+    syndict["weight"] = 2 * syndict["weight"] - 0.5 * nest.spatial.distance
     nest.Connect(mossy, golgi, conn_spec=conndict, syn_spec=syndict)
 
 def connect_spatial_mossy_to_dcn(mossy, dcn):
@@ -156,6 +158,7 @@ def connect_spatial_mossy_to_dcn(mossy, dcn):
         }
     }
     syndict = config.SYN_MF_TO_DCN
+    syndict["weight"] = 1.5 * syndict["weight"] - 0.2 * nest.spatial.distance
     nest.Connect(mossy, dcn, conn_spec=conndict, syn_spec=syndict)
 
 def connect_spatial_granule_to_golgi(granule, golgi):
@@ -174,6 +177,7 @@ def connect_spatial_granule_to_golgi(granule, golgi):
         }
     }
     syndict = config.SYN_GRANULE_TO_GOLGI
+    syndict["weight"] = syndict["weight"] - 0.3 * nest.spatial.distance
     nest.Connect(granule, golgi, conn_spec=conndict, syn_spec=syndict)
 
 def connect_spatial_granule_to_purkinje(granule, purkinje):
@@ -187,11 +191,12 @@ def connect_spatial_granule_to_purkinje(granule, purkinje):
                 "major_axis": 8.0,  # Horizontal orientation (parallel fibers)
                 "minor_axis": 1.5,
                 "polar_axis": 1.5,
-                "polar_angle": 0  # Major axis in xy-plane
+                "polar_angle": 90  # Major axis in xy-plane
             }
         }
     }
     syndict = config.SYN_PARALLEL
+    syndict["weight"] = 2 * syndict["weight"] - 0.5 * nest.spatial.distance
     nest.Connect(granule, purkinje, conn_spec=conndict, syn_spec=syndict)
 
 def connect_spatial_granule_to_interneuron(granule, interneuron):
@@ -210,6 +215,7 @@ def connect_spatial_granule_to_interneuron(granule, interneuron):
         }
     }
     syndict = config.SYN_GRANULE_TO_INTERNEURON
+    syndict["weight"] = 2 * syndict["weight"] - 0.2 * nest.spatial.distance
     nest.Connect(granule, interneuron, conn_spec=conndict, syn_spec=syndict)
 
 def connect_spatial_golgi_to_granule(golgi, granule):
@@ -228,6 +234,7 @@ def connect_spatial_golgi_to_granule(golgi, granule):
         }
     }
     syndict = config.SYN_GOLGI_TO_GRANULE
+    syndict["weight"] = 2 * syndict["weight"] - 0.2 * nest.spatial.distance
     nest.Connect(golgi, granule, conn_spec=conndict, syn_spec=syndict)
 
 def connect_spatial_golgi_to_golgi(golgi):
@@ -246,6 +253,7 @@ def connect_spatial_golgi_to_golgi(golgi):
         }
     }
     syndict = config.SYN_GOLGI_TO_GOLGI
+    syndict["weight"] = 2 * syndict["weight"] - 0.2 * nest.spatial.distance
     nest.Connect(golgi, golgi, conn_spec=conndict, syn_spec=syndict)
 
 def connect_spatial_climbing_to_purkinje(climbing, purkinje):
@@ -274,6 +282,7 @@ def connect_spatial_interneuron_to_purkinje(interneuron, purkinje):
         }
     }
     syndict = config.SYN_INTERNEURON_TO_PURKINJE
+    syndict["weight"] = syndict["weight"] - 0.1 * nest.spatial.distance
     nest.Connect(interneuron, purkinje, conn_spec=conndict, syn_spec=syndict)
 
 def connect_spatial_interneuron_to_interneuron(interneuron):
@@ -292,6 +301,7 @@ def connect_spatial_interneuron_to_interneuron(interneuron):
         }
     }
     syndict = config.SYN_INTERNEURON_TO_INTERNEURON
+    syndict["weight"] = syndict["weight"] - 0.2 * nest.spatial.distance
     nest.Connect(interneuron, interneuron, conn_spec=conndict, syn_spec=syndict)
 
 def connect_spatial_purkinje_to_dcn(purkinje, dcn):
@@ -302,6 +312,7 @@ def connect_spatial_purkinje_to_dcn(purkinje, dcn):
         "outdegree": parameter
     }
     syndict = config.SYN_PURKINJE_TO_DCN
+    syndict["weight"] = 2 * syndict["weight"] - 0.5 * nest.spatial.distance
     nest.Connect(purkinje, dcn, conn_spec=conndict, syn_spec=syndict)
 
 def connect_spatial_all(mossy, climbing, granule, golgi, purkinje, interneuron, dcn):
