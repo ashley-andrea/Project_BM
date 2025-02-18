@@ -2,8 +2,8 @@ TODO LIST
 
 - [X] Finish spatial modeling (connections remaining)
 - [X] Observe changes with reasonable data (tweak data in config.py until good behaviour)
-- [ ] Analyze the behaviour of SNN in NEST
-- [ ] Analyze the steady states
+- [X] Analyze the behaviour of SNN in NEST
+- [ ] Analyze the steady states (?)
 - [ ] Comparison between the two models
 - [ ] Results
 - [ ] Many many graphs
