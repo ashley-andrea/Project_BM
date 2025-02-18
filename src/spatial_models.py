@@ -123,7 +123,7 @@ def connect_spatial_mossy_to_granule(mossy, granule):
         }
     }
     syndict = config.SYN_MF_TO_GRANULE
-    syndict["weight"] = syndict["weight"] - 0.5 * nest.spatial.distance
+    syndict["weight"] = 2 * syndict["weight"] - 0.5 * nest.spatial.distance
     nest.Connect(mossy, granule, conn_spec=conndict, syn_spec=syndict)
 
 def connect_spatial_mossy_to_golgi(mossy, golgi):
