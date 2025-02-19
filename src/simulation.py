@@ -154,21 +154,25 @@ def example_simulation():
     network = setup_network()
     
     # Attach recorders to populations of interest
-    sd_purkinje = attach_recorders(network["purkinje"], record_type="spikes")
-    vd_purkinje = attach_recorders(network["purkinje"], record_type="voltages")
-    sd_dcn = attach_recorders(network["dcn"], record_type="spikes")
-    vd_dcn = attach_recorders(network["dcn"], record_type="voltages")
-    
+    sd_PC = attach_recorders(network["purkinje"], record_type="spikes")
+    vd_PC = attach_recorders(network["purkinje"], record_type="voltages")
+    sd_GrC = attach_recorders(network["granule"], record_type="spikes")
+    vd_GrC = attach_recorders(network["granule"], record_type="voltages")
+    sd_GoC = attach_recorders(network["golgi"], record_type="spikes")
+    vd_GoC = attach_recorders(network["golgi"], record_type="voltages")
+
     # Run simulation for the specified simulation time
     print ("Simulation running...")
     nest.Simulate(config.SIM_TIME)
 
     # Return recorded data
     return {
-        "purkinje_spikes": nest.GetStatus(sd_purkinje, keys="events")[0],
-        "purkinje_voltages": nest.GetStatus(vd_purkinje, keys="events")[0],
-        "dcn_spikes": nest.GetStatus(sd_dcn, keys="events")[0],
-        "dcn_voltages": nest.GetStatus(vd_dcn, keys="events")[0],
+        "purkinje_spikes": nest.GetStatus(sd_PC, keys="events")[0],
+        "purkinje_voltages": nest.GetStatus(vd_PC, keys="events")[0],
+        "granule_spikes": nest.GetStatus(sd_GrC, keys="events")[0],
+        "granule_voltages": nest.GetStatus(vd_GrC, keys="events")[0],
+        "golgi_spikes": nest.GetStatus(sd_GoC, keys="events")[0],
+        "golgi_voltages": nest.GetStatus(vd_GoC, keys="events")[0],
     }
 
 def example_spatial_simulation():
