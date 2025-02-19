@@ -9,7 +9,7 @@ from elephant.conversion import BinnedSpikeTrain
 from elephant.spectral import welch_psd
 from tqdm import tqdm
 
-def analyze_spike_data(spike_data):
+def analyze_spike_data(spike_data, skip_correlation=False):
     """Analyze spike data using Elephant to compute advanced metrics."""
     times = spike_data["times"]
     senders = spike_data["senders"]
@@ -59,7 +59,7 @@ def analyze_spike_data(spike_data):
     # Spike correlation analysis
     cc_matrix = np.array([])
     avg_correlation = np.nan
-    if len(spike_trains) > 1:
+    if len(spike_trains) > 1 and not skip_correlation:
         print(f"Calculating spike correlations for {len(spike_trains)} neurons...")
         n = len(spike_trains)
         cc_matrix = np.full((n, n), np.nan)
