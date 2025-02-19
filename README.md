@@ -4,6 +4,9 @@
 # Comparison of Cerebellar Spiking Neural Networks
 This project investigates the differences between two spiking neural network (SNN) models of the cerebellum. Using the NEST simulator, we implement a biologically inspired Leaky Integrate-and-Fire (LIF) network and compare its dynamics with a more detailed model that incorporates spatial information.
 
+## Colab compatibility
+If you want to open this project with colab, follow this link: [Colab Link](https://colab.research.google.com/github/22cav/Project_BM/blob/main/cerebellum_simulation(Colab).ipynb)
+
 ## Objectives
 The goal of this project is to examine how different levels of abstraction in neural modeling influence network behavior. Specifically, we:
 
