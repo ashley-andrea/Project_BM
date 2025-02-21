@@ -15,4 +15,5 @@ MORE STUFF
 - [ ] Compare the connection range graphs of the two Models
 - [ ] Compare the architectures with different parameters (tipo cambiare il rate del mf, cambiare il peso delle connessioni ...)
 - [ ] Make a more explainable Voltage analysis (Spectral Analysis)
+- [ ] MOST IMPORTANTLY: For all the parameters varying with distance, handle the limit cases
 - [ ] In the spatially structured network, show how some connections are more impactful than others
