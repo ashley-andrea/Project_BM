@@ -17,8 +17,8 @@ The goal of this project is to examine how different levels of abstraction in ne
    - Analyze neural activity using spike trains, raster plots, and average firing rates.
 2. Compare Network Dynamics:
    - Measure steady-state firing rates across models.
-   - Identify transition points (e.g., shifts between low/high activity or asynchronous/synchronized states).
    - Examine temporal patterns, including oscillations and fluctuations.
+   - Compare some variables extracted from the results (e.g. Correlation coefficients)
 
 ## Requirements
 To set up the environment, it is recommended to use Conda and install dependencies from the `requirements.txt` file.
