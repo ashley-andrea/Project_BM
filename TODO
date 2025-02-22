@@ -14,5 +14,5 @@ MORE STUFF
 - [X] Graph showing the connection range of a Neuron (guardare ultima parte di prova.ipynb per esempio)
 - [ ] Compare the architectures with different parameters (tipo cambiare il rate del mf, cambiare il peso delle connessioni ...)
 - [ ] Make a more explainable Voltage analysis (Spectral Analysis)
-- [ ] MOST IMPORTANTLY: For all the parameters varying with distance, handle the limit cases
+- [X] MOST IMPORTANTLY: For all the parameters varying with distance, handle the limit cases
 - [ ] In the spatially structured network, show how some connections are more impactful than others
