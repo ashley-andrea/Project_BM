@@ -135,8 +135,8 @@ def connect_spatial_mossy_to_golgi(mossy, golgi):
         "mask": {
             "ellipsoidal": {
                 "major_axis": 4.0,  # Vertical orientation
-                "minor_axis": 1.5,
-                "polar_axis": 1.5,
+                "minor_axis": 2.0,
+                "polar_axis": 2.0,
                 "polar_angle": 90
             }
         }

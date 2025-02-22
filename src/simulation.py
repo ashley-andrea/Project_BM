@@ -3,9 +3,11 @@ import nest
 import src.config as config 
 import src.models as models
 import src.spatial_models as spatial_models
+import src.visualization as visualization
 import matplotlib.pyplot as plt
 import numpy as np
 
+nest.set_verbosity("M_ERROR")
 # Apply the simulation settings to NEST
 nest.ResetKernel()
 nest.SetKernelStatus({"resolution": config.DT, "print_time": True, "rng_seed": config.SEED})
@@ -124,8 +126,6 @@ def setup_spatial_network(plot_model=False):
 
         plt.show()
 
-
-
     return {
         "granule": granule_cells,
         "purkinje": purkinje_cells,
@@ -188,10 +188,15 @@ def example_spatial_simulation():
     sd_GoC = attach_recorders(network["golgi"], record_type="spikes")
     vd_GoC = attach_recorders(network["golgi"], record_type="voltages")
 
+    visualization.show_connections(network, "mossy_fibers", "granule", perspective=(10, -50))
+    visualization.show_connections(network, "mossy_fibers", "granule", perspective=(70, -30))
+    visualization.show_connections(network, "mossy_fibers", "golgi", perspective=(10, -50))
+    visualization.show_connections(network, "mossy_fibers", "golgi", perspective=(70, -30))
+
     # Run simulation for the specified simulation time
     print ("Simulation running...")
     nest.Simulate(config.SIM_TIME)
-
+    print ("Simulation complete.")
     # Return recorded data
     return {
         "purkinje_spikes": nest.GetStatus(sd_PC, keys="events")[0],

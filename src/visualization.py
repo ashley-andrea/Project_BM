@@ -1,9 +1,12 @@
 # src/visualization.py
 import matplotlib.pyplot as plt
+import nest.spatial
 import numpy as np
+import nest
 from elephant.statistics import instantaneous_rate, mean_firing_rate
 from elephant.conversion import BinnedSpikeTrain
 from quantities import ms, Hz
+
 
 def plot_raster(spike_data, title="Spike Raster Plot"):
     """Generate a raster plot from Neo spike trains."""
@@ -94,3 +97,39 @@ def plot_spectral_analysis(voltage_results, title="Spectral Analysis"):
     plt.title(title)
     plt.grid(True)
     plt.show()
+
+def show_connections(network, source, target, perspective=(10, -50)):
+    try:
+        elev, azim = perspective
+    except ValueError:
+        raise ValueError("Perspective should be a tuple of two angles (elevation, azimuth).")
+    
+    try:
+        source_pop = network[source]
+        target_pop = network[target]
+    except KeyError:
+        raise ValueError("Source or target population not found in the network.")
+    
+    # Extract one neuron from source population
+    src_neuron = nest.FindCenterElement(source_pop)
+    src_neuron_connections = nest.GetConnections(src_neuron, target_pop)
+    if len(src_neuron_connections) == 0:
+        raise ValueError("No connections found between source and target populations for the selected neuron.")
+    print(f"Connections from {source} to {target}: {len(src_neuron_connections)}")
+    weights = src_neuron_connections.get("weight")
+    fig = nest.PlotTargets(src_neuron, target_pop, src_color="red", src_size=40, tgt_color="blue", probability_parameter=weights)
+    ax = fig.gca()
+    ax.set_xlim(-1.0, 1.0)
+    ax.set_ylim(-1.0, 1.0)
+    ax.set_zlim(0.0, 5.0)
+    ax.set_title(f"Synaptic Connections Between the center neuron of '{source}' and its targets in '{target}'\nPerspective: Elevation={elev}, Azimuth={azim}")
+    ax.set
+    ax.set_xlabel("X Position")
+    ax.set_ylabel("Y Position")
+    ax.set_zlabel("Z Position")
+    ax.set_xticklabels([])
+    ax.set_yticklabels([]) 
+    ax.set_zticklabels([])
+    ax.view_init(elev=elev, azim=azim)
+    return fig
+

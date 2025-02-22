@@ -196,5 +196,5 @@ CONN_PURKINJE_TO_DCN = {
 # Random Seed for reproducibility
 # =============================================================================
 
-SEED = 42
+SEED = 2025
 
