@@ -213,7 +213,7 @@ def analyze_voltage_data(voltage_data):
     # Theta power calculation with validation
     theta_power = 0.0
     try:
-        theta_band = (4, 8)
+        theta_band = (4, 12)
         theta_mask = (freq >= theta_band[0]) & (freq <= theta_band[1])
         if np.sum(theta_mask) > 1:
             theta_power = np.trapz(psd[theta_mask], freq[theta_mask])
@@ -222,7 +222,7 @@ def analyze_voltage_data(voltage_data):
 
     print("\n[Voltage Analysis] Results:")
     print(f"- Dominant frequency: {dominant_freq:.2f} Hz")
-    print(f"- Theta power (4-8 Hz): {theta_power:.2e} mV²/Hz")
+    print(f"- Theta power (4-12 Hz): {theta_power:.2e} mV²/Hz")
     print(f"- Frequency range: {freq[0]:.1f}-{freq[-1]:.1f} Hz" if len(freq) > 0 else "- No frequency data")
 
     return {
