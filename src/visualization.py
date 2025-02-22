@@ -98,7 +98,7 @@ def plot_spectral_analysis(voltage_results, title="Spectral Analysis"):
     plt.grid(True)
     plt.show()
 
-def show_connections(network, source, target, perspective=(10, -50)):
+def show_connections(network, source, target, print_text=False, perspective=(10, -50)):
     try:
         elev, azim = perspective
     except ValueError:
@@ -115,7 +115,8 @@ def show_connections(network, source, target, perspective=(10, -50)):
     src_neuron_connections = nest.GetConnections(src_neuron, target_pop)
     if len(src_neuron_connections) == 0:
         raise ValueError("No connections found between source and target populations for the selected neuron.")
-    print(f"Connections from {source} to {target}: {len(src_neuron_connections)}")
+    if print_text:
+        print(f"Connections from {source} to {target}: {len(src_neuron_connections)}")
     weights = src_neuron_connections.get("weight")
     fig = nest.PlotTargets(src_neuron, target_pop, src_color="red", src_size=40, tgt_color="blue", probability_parameter=weights)
     ax = fig.gca()

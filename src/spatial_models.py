@@ -104,7 +104,6 @@ def create_spatial_deep_cerebellar_nuclei(n):
 # =============================================================================
 
 # Mossy Fibers Connections
-
 def connect_spatial_mossy_to_granule(mossy, granule):
     """
     Mossy -> Granule: Vertical column-like connectivity (z-oriented ellipsoid)
@@ -123,7 +122,9 @@ def connect_spatial_mossy_to_granule(mossy, granule):
         }
     }
     syndict = config.SYN_MF_TO_GRANULE
-    syndict["weight"] = 2 * syndict["weight"] - 0.5 * nest.spatial.distance
+    # Updated weight formula to ensure non-negative values:
+    # Multiplicative decay with max distance assumed to be 10.0
+    syndict["weight"] = syndict["weight"] * (2 - nest.spatial.distance / 10.0)
     nest.Connect(mossy, granule, conn_spec=conndict, syn_spec=syndict)
 
 def connect_spatial_mossy_to_golgi(mossy, golgi):
@@ -142,7 +143,8 @@ def connect_spatial_mossy_to_golgi(mossy, golgi):
         }
     }
     syndict = config.SYN_MF_TO_GOLGI
-    syndict["weight"] = 2 * syndict["weight"] - 0.5 * nest.spatial.distance
+    # Updated weight formula: multiplicative decay with max distance = 8.0
+    syndict["weight"] = syndict["weight"] * (1 - nest.spatial.distance / 8.0)
     nest.Connect(mossy, golgi, conn_spec=conndict, syn_spec=syndict)
 
 def connect_spatial_mossy_to_dcn(mossy, dcn):
@@ -161,7 +163,8 @@ def connect_spatial_mossy_to_dcn(mossy, dcn):
         }
     }
     syndict = config.SYN_MF_TO_DCN
-    syndict["weight"] = 1.5 * syndict["weight"] - 0.2 * nest.spatial.distance
+    # Updated weight formula: multiplicative decay with max distance = 15.0
+    syndict["weight"] = syndict["weight"] * (1 - nest.spatial.distance / 15.0)
     nest.Connect(mossy, dcn, conn_spec=conndict, syn_spec=syndict)
 
 def connect_spatial_granule_to_golgi(granule, golgi):
@@ -180,7 +183,8 @@ def connect_spatial_granule_to_golgi(granule, golgi):
         }
     }
     syndict = config.SYN_GRANULE_TO_GOLGI
-    syndict["weight"] = syndict["weight"] - 0.3 * nest.spatial.distance
+    # Updated weight formula: multiplicative decay with max distance = 3.33
+    syndict["weight"] = syndict["weight"] * (1 - nest.spatial.distance / 3.33)
     nest.Connect(granule, golgi, conn_spec=conndict, syn_spec=syndict)
 
 def connect_spatial_granule_to_purkinje(granule, purkinje):
@@ -199,7 +203,8 @@ def connect_spatial_granule_to_purkinje(granule, purkinje):
         }
     }
     syndict = config.SYN_PARALLEL
-    syndict["weight"] = 2 * syndict["weight"] - 0.5 * nest.spatial.distance
+    # Updated weight formula: multiplicative decay with max distance = 16.0
+    syndict["weight"] = syndict["weight"] * (2 - nest.spatial.distance / 16.0)
     nest.Connect(granule, purkinje, conn_spec=conndict, syn_spec=syndict)
 
 def connect_spatial_granule_to_interneuron(granule, interneuron):
@@ -218,7 +223,8 @@ def connect_spatial_granule_to_interneuron(granule, interneuron):
         }
     }
     syndict = config.SYN_GRANULE_TO_INTERNEURON
-    syndict["weight"] = 2 * syndict["weight"] - 0.2 * nest.spatial.distance
+    # Updated weight formula: multiplicative decay with max distance = 30.0
+    syndict["weight"] = syndict["weight"] * (1 - nest.spatial.distance / 30.0)
     nest.Connect(granule, interneuron, conn_spec=conndict, syn_spec=syndict)
 
 def connect_spatial_golgi_to_granule(golgi, granule):
@@ -237,6 +243,7 @@ def connect_spatial_golgi_to_granule(golgi, granule):
         }
     }
     syndict = config.SYN_GOLGI_TO_GRANULE
+    # Inhibitory synapse: retain original formula (weight is assumed negative)
     syndict["weight"] = 2 * syndict["weight"] - 0.2 * nest.spatial.distance
     nest.Connect(golgi, granule, conn_spec=conndict, syn_spec=syndict)
 
@@ -256,6 +263,7 @@ def connect_spatial_golgi_to_golgi(golgi):
         }
     }
     syndict = config.SYN_GOLGI_TO_GOLGI
+    # Inhibitory synapse: retain original formula (weight is assumed negative)
     syndict["weight"] = 2 * syndict["weight"] - 0.2 * nest.spatial.distance
     nest.Connect(golgi, golgi, conn_spec=conndict, syn_spec=syndict)
 
@@ -270,7 +278,7 @@ def connect_spatial_climbing_to_purkinje(climbing, purkinje):
     nest.Connect(climbing, purkinje, conn_spec=conndict, syn_spec=syndict)
 
 def connect_spatial_interneuron_to_purkinje(interneuron, purkinje):
-    """Connect interneurons to Purkinje cells with excitatory synapses."""
+    """Connect interneurons to Purkinje cells with inhibitory synapses."""
     parameter = config.CONN_INTERNEURON_TO_PURKINJE["p"]
     conndict = {
         "rule": "pairwise_bernoulli",
@@ -285,6 +293,7 @@ def connect_spatial_interneuron_to_purkinje(interneuron, purkinje):
         }
     }
     syndict = config.SYN_INTERNEURON_TO_PURKINJE
+    # Corrected to inhibitory synapses; the formula remains valid for negative weights
     syndict["weight"] = syndict["weight"] - 0.1 * nest.spatial.distance
     nest.Connect(interneuron, purkinje, conn_spec=conndict, syn_spec=syndict)
 
@@ -315,8 +324,10 @@ def connect_spatial_purkinje_to_dcn(purkinje, dcn):
         "outdegree": parameter
     }
     syndict = config.SYN_PURKINJE_TO_DCN
+    # Inhibitory synapse: retain original formula (weight is assumed negative)
     syndict["weight"] = 2 * syndict["weight"] - 0.5 * nest.spatial.distance
     nest.Connect(purkinje, dcn, conn_spec=conndict, syn_spec=syndict)
+
 
 def connect_spatial_all(mossy, climbing, granule, golgi, purkinje, interneuron, dcn):
     """Connect all populations according to cerebellar connectivity rules."""

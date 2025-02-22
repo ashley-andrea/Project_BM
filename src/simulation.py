@@ -164,6 +164,7 @@ def example_simulation():
     # Run simulation for the specified simulation time
     print ("Simulation running...")
     nest.Simulate(config.SIM_TIME)
+    print ("Simulation complete.")
 
     # Return recorded data
     return {
@@ -188,9 +189,9 @@ def example_spatial_simulation():
     sd_GoC = attach_recorders(network["golgi"], record_type="spikes")
     vd_GoC = attach_recorders(network["golgi"], record_type="voltages")
 
-    visualization.show_connections(network, "mossy_fibers", "granule", perspective=(10, -50))
+    visualization.show_connections(network, "mossy_fibers", "granule", print_text=True, perspective=(10, -50))
     visualization.show_connections(network, "mossy_fibers", "granule", perspective=(70, -30))
-    visualization.show_connections(network, "mossy_fibers", "golgi", perspective=(10, -50))
+    visualization.show_connections(network, "mossy_fibers", "golgi", print_text=True, perspective=(10, -50))
     visualization.show_connections(network, "mossy_fibers", "golgi", perspective=(70, -30))
 
     # Run simulation for the specified simulation time
