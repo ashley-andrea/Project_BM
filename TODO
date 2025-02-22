@@ -8,7 +8,8 @@ TODO LIST
 - [X] Results
 - [X] Many many graphs
 - [ ] Report
-
+- [ ] Synchronize the colab notebook as the latest version
+ 
 MORE STUFF
 
 - [X] Graph showing the connection range of a Neuron (guardare ultima parte di prova.ipynb per esempio)
