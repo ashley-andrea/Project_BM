@@ -26,7 +26,7 @@ def plot_raster(spike_data, title="Spike Raster Plot"):
 def plot_isi_histogram(isis, bins=50, title="ISI Histogram"):
     """Plot the histogram of inter-spike intervals."""
     plt.figure(figsize=(10, 5))
-    plt.hist(isis * 1000, bins=bins, color="skyblue", edgecolor="black")  # Convert s to ms
+    plt.hist(isis, bins=bins, color="skyblue", edgecolor="black")  # Convert s to ms
     plt.xlabel("Inter-Spike Interval (ms)")
     plt.ylabel("Count")
     plt.title(title)
