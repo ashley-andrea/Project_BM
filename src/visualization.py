@@ -6,6 +6,7 @@ import nest
 from elephant.statistics import instantaneous_rate, mean_firing_rate
 from elephant.conversion import BinnedSpikeTrain
 from quantities import ms, Hz
+from matplotlib import cm
 
 
 def plot_raster(spike_data, title="Spike Raster Plot"):
@@ -26,7 +27,7 @@ def plot_raster(spike_data, title="Spike Raster Plot"):
 def plot_isi_histogram(isis, bins=50, title="ISI Histogram"):
     """Plot the histogram of inter-spike intervals."""
     plt.figure(figsize=(10, 5))
-    plt.hist(isis, bins=bins, color="skyblue", edgecolor="black")  # Convert s to ms
+    plt.hist(isis, bins=bins, color="skyblue", edgecolor="black") 
     plt.xlabel("Inter-Spike Interval (ms)")
     plt.ylabel("Count")
     plt.title(title)
@@ -117,8 +118,17 @@ def show_connections(network, source, target, print_text=False, perspective=(10,
         raise ValueError("No connections found between source and target populations for the selected neuron.")
     if print_text:
         print(f"Connections from {source} to {target}: {len(src_neuron_connections)}")
+    
+    # Extract the weights of the connections and normalize them to a range of 0 to 1
     weights = src_neuron_connections.get("weight")
-    fig = nest.PlotTargets(src_neuron, target_pop, src_color="red", src_size=40, tgt_color="blue", probability_parameter=weights)
+    min_weight = np.min(weights)
+    max_weight = np.max(weights)
+    norm_weights = (weights - min_weight) / (max_weight - min_weight)
+
+    # Colormap to apply to the normalized weights
+    colormap = cm.inferno_r 
+    colors = colormap(norm_weights)  # This returns RGBA values
+    fig = nest.PlotTargets(src_neuron, target_pop, src_color="blue", src_size=40, tgt_color=colors, probability_parameter=weights)
     ax = fig.gca()
     ax.set_xlim(-1.0, 1.0)
     ax.set_ylim(-1.0, 1.0)
@@ -132,5 +142,11 @@ def show_connections(network, source, target, print_text=False, perspective=(10,
     ax.set_yticklabels([]) 
     ax.set_zticklabels([])
     ax.view_init(elev=elev, azim=azim)
-    return fig
 
+    # Create a colorbar (legend) for connection strengths
+    sm = plt.cm.ScalarMappable(cmap=colormap, norm=plt.Normalize(vmin=min(norm_weights), vmax=max(norm_weights)))
+    sm.set_array([])  # Empty array to generate the colorbar
+    cbar = fig.colorbar(sm, ax=ax, fraction=0.02, pad=0.25)
+    cbar.set_label("Connection Strength", rotation=270, labelpad=15)
+
+    return fig
