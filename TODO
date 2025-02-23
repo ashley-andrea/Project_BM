@@ -3,12 +3,11 @@ TODO LIST
 - [X] Finish spatial modeling (connections remaining)
 - [X] Observe changes with reasonable data (tweak data in config.py until good behaviour)
 - [X] Analyze the behaviour of SNN in NEST
-- [ ] Analyze the steady states (?)
 - [Piuomenofatta] Comparison between the two models
 - [X] Results
 - [X] Many many graphs
-- [ ] Report
-- [ ] Synchronize the colab notebook as the latest version
+- [X] Report
+- [X] Synchronize the colab notebook as the latest version
  
 MORE STUFF
 
@@ -16,4 +15,4 @@ MORE STUFF
 - [ ] Compare the architectures with different parameters (tipo cambiare il rate del mf, cambiare il peso delle connessioni ...)
 - [ ] Make a more explainable Voltage analysis (Spectral Analysis)
 - [X] MOST IMPORTANTLY: For all the parameters varying with distance, handle the limit cases
-- [ ] In the spatially structured network, show how some connections are more impactful than others
+- [X] In the spatially structured network, show how some connections are more impactful than others
