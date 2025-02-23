@@ -3,7 +3,7 @@
 # Simulation parameters
 # =============================================================================
 
-SIM_TIME = 1000.0   # Total simulation time in ms (increased for robust mean-field convergence)
+SIM_TIME = 1000.0   # Total simulation time in ms
 DT       = 0.1      # Integration time step in ms
 
 # =============================================================================
@@ -25,7 +25,7 @@ CLIMBING_FIBER_NUM = 64
 # =============================================================================
 
 GRANULE_CELL_PARAMS = {
-    "tau_m": 12.0,    # Membrane time constant (ms), increased slightly for mean field smoothing
+    "tau_m": 12.0,    # Membrane time constant (ms)
     "E_L": -68.0,     # Resting potential (mV)
     "V_th": -42.0,    # Firing threshold (mV)
     "V_reset": -68.0, # Reset potential (mV)
@@ -140,7 +140,7 @@ SYN_CLIMBING = {
 
 CONN_MF_TO_GRANULE = {
     "rule": "pairwise_bernoulli",
-    "p": 0.05  # Increased probability to yield denser connections in the mean field limit
+    "p": 0.05  
 }
 
 CONN_MF_TO_GOLGI = {
@@ -197,4 +197,3 @@ CONN_PURKINJE_TO_DCN = {
 # =============================================================================
 
 SEED = 2025
-
