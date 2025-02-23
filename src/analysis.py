@@ -11,7 +11,7 @@ from tqdm import tqdm
 
 def analyze_spike_data(spike_data, skip_correlations=False):
     """Analyze spike data using Elephant to compute advanced metrics."""
-    times = spike_data["times"]
+    times = spike_data["times"]  
     senders = spike_data["senders"]
     
     print(f"Starting spike data analysis with {len(times)} spikes from {len(np.unique(senders))} neurons.")
@@ -94,8 +94,8 @@ def analyze_voltage_data(voltage_data):
     if not isinstance(voltage_data, dict) or 'V_m' not in voltage_data or 'times' not in voltage_data:
         raise ValueError("Invalid voltage data format. Expected dictionary with 'V_m' and 'times' keys.")
     
-    voltages = voltage_data["V_m"]
-    times = voltage_data["times"]
+    voltages = voltage_data["V_m"]  # This is in mV by default in nest
+    times = voltage_data["times"]  # This is in ms by default in nest
     
     if len(voltages) != len(times):
         raise ValueError(f"Voltage/time mismatch: {len(voltages)} voltages vs {len(times)} time points")
@@ -113,8 +113,8 @@ def analyze_voltage_data(voltage_data):
 
     # Calculate sampling parameters
     try:
-        sampling_interval = np.mean(np.diff(times))  # in ms
-        fs = 1000.0 / sampling_interval  # Sampling frequency in Hz
+        sampling_interval = np.mean(np.diff(times))  # Calculating the average sampling interval between consecutive timesteps, in ms
+        fs = 1000.0 / sampling_interval  # Sampling frequency in Hz (x1000 transforms sampling_interval to seconds): it's really high but depends on the model parameters
         total_duration = (times[-1] - times[0]) / 1000.0  # Convert ms to seconds
     except Exception as e:
         raise ValueError(f"Time array processing failed: {str(e)}") from e
@@ -122,9 +122,10 @@ def analyze_voltage_data(voltage_data):
     print(f"Calculated sampling rate: {fs:.2f} Hz")
     print(f"Total duration: {total_duration:.2f} seconds")
 
+
     # Create Neo AnalogSignal with validation
     try:
-        analog_signal = neo.AnalogSignal(
+        analog_signal = neo.AnalogSignal(  
             voltages.reshape(-1, 1) * pq.mV,
             t_start=times[0] * pq.ms,
             sampling_rate=fs * pq.Hz
@@ -133,8 +134,8 @@ def analyze_voltage_data(voltage_data):
         raise ValueError(f"Signal creation failed: {str(e)}") from e
 
     # Adaptive Welch parameters
-    min_segment_length = 0.5  # seconds
-    max_segment_length = 5.0  # seconds
+    min_segment_length = 0.5  # seconds; smaller segments lead to not meaningful spectral analysis
+    max_segment_length = 5.0  # seconds; too long segments introduce spectral leakage or poor resolution in frequency space
     target_segment_length = 1.0  # seconds
     
     # Calculate safe segment length
@@ -145,7 +146,7 @@ def analyze_voltage_data(voltage_data):
         overlap = 0.0
     else:
         len_segment = min(max(target_segment_length, min_segment_length), 
-                        min(total_duration, max_segment_length))
+                        min(total_duration, max_segment_length))  # in seconds
         n_segments = max(1, int(total_duration / (len_segment * 0.5)) - 1)
         overlap = 0.5
 
@@ -155,8 +156,10 @@ def analyze_voltage_data(voltage_data):
         overlap = (total_duration - len_segment) / len_segment
 
     # Calculate valid nperseg (number of samples per segment)
-    nperseg = int(len_segment * fs)
-    if nperseg < 8:  # Minimum required by FFT
+    nperseg = int(len_segment * fs)  # Dimensionless, gives the total number of samples in a segment
+    print(f"Calculated nperseg: {nperseg}, dtype: {type(nperseg)}")
+
+    if nperseg < 8:  # Minimum required by FFT: without at least 8 points the spectral analysis is not meaningful, as frequency resolution is too low
         print(f"Adjusting segment length from {len_segment:.2f}s to minimum valid length")
         nperseg = max(8, len(voltages) // 2)
         len_segment = nperseg / fs
@@ -172,12 +175,12 @@ def analyze_voltage_data(voltage_data):
     try:
         freq, psd = welch_psd(
             analog_signal,
-            fs=fs * pq.Hz,
-            n_segments=n_segments,
-            len_segment=len_segment * pq.s,
+            fs=float(fs),
+            n_segments=int(n_segments),
+            len_segment = len_segment * pq.s,
             overlap=overlap,
             window='hann',
-            nfft=max(nperseg, 8)
+            nfft = max(int(round(nperseg)), 8)  # Ensure nfft is not smaller than 8 (minimum required for FFT)
         )
         freq = freq.rescale('Hz').magnitude.flatten()
         psd = psd.rescale('mV**2/Hz').magnitude.flatten()
@@ -213,7 +216,7 @@ def analyze_voltage_data(voltage_data):
     # Theta power calculation with validation
     theta_power = 0.0
     try:
-        theta_band = (4, 8)
+        theta_band = (4, 12)
         theta_mask = (freq >= theta_band[0]) & (freq <= theta_band[1])
         if np.sum(theta_mask) > 1:
             theta_power = np.trapz(psd[theta_mask], freq[theta_mask])
@@ -222,7 +225,7 @@ def analyze_voltage_data(voltage_data):
 
     print("\n[Voltage Analysis] Results:")
     print(f"- Dominant frequency: {dominant_freq:.2f} Hz")
-    print(f"- Theta power (4-8 Hz): {theta_power:.2e} mV²/Hz")
+    print(f"- Theta power (4-12 Hz): {theta_power:.2e} mV²/Hz")
     print(f"- Frequency range: {freq[0]:.1f}-{freq[-1]:.1f} Hz" if len(freq) > 0 else "- No frequency data")
 
     return {
