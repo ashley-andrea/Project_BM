@@ -3,6 +3,7 @@
 
 # Comparison of Cerebellar Spiking Neural Networks
 This project investigates the differences between two spiking neural network (SNN) models of the cerebellum. Using the NEST simulator, we implement a biologically inspired Leaky Integrate-and-Fire (LIF) network and compare its dynamics with a more detailed model that incorporates spatial information.
+The simplest way to inspect the code and its functioning is through Colab: check below for the link.
 
 ## Colab compatibility
 If you want to open and run this project with colab, follow this link: 
@@ -16,7 +17,7 @@ The goal of this project is to examine how different levels of abstraction in ne
    - Define synaptic connectivity and external inputs.
    - Analyze neural activity using spike trains, raster plots, and average firing rates.
 2. Compare Network Dynamics:
-   - Measure steady-state firing rates across models.
+   - Measure firing rates across models.
    - Examine temporal patterns, including oscillations and fluctuations.
    - Compare some variables extracted from the results (e.g. Correlation coefficients)
 
@@ -27,3 +28,5 @@ Software & Libraries:
 
 ## Authors
 - [@22cav](https://www.github.com/22cav)
+- [@ashley-andrea](https://www.github.com/ashley-andrea)
+- [@SofiaFormenti](https://www.github.com/SofiaFormenti)
